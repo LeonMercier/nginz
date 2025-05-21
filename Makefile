@@ -6,7 +6,7 @@
 #    By: sniemela <sniemela@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/05/21 12:37:52 by sniemela          #+#    #+#              #
-#    Updated: 2025/05/21 12:37:57 by sniemela         ###   ########.fr        #
+#    Updated: 2025/05/21 14:22:50 by sniemela         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -29,24 +29,28 @@ WEBSERV			= echo "🔗 $(YELLOW)Linking webserv...$(RESET)"
 NAME = webserv
 CPPFLAGS = -Wall -Werror -Wextra -std=c++11
 CPP = c++
-SOURCES = src/main.cpp \
+SOURCES = src/main.cpp 
 
+SRCDIR = src
 OBJDIR = obj
-OBJS = $(SOURCES:%.cpp=$(OBJDIR)/%.o)
+OBJS = $(SOURCES:%.c=$(OBJDIR)/%.o)
 
 all: $(NAME)
 
-$(NAME): $(OBJS)
-	@$(WEBSERV)
-	@$(CPP) $(CPPFLAGS) $(OBJS) -o $(NAME)
-	@$(X_READY)
 
-$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
-	@mkdir -p $(OBJDIR)
-	@$(CPP) $(CPPFLAGS) -c $< -o $@
+$(NAME): $(OBJS) 
+	@$(CUB3D)
+	@$(CPP) $(CFLAGS) $(OBJS) -o $(NAME)
+	@$(X_READY)
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+	@mkdir -p $(dir $@)
+	@$(CPP) $(CFLAGS) $(INCLUDE) -c $< -o $@
+	@$(OBJ_READY)
+
 
 clean:
 	@$(CLEANING)
