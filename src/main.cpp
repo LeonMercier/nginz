@@ -2,12 +2,12 @@
 
 int	main(int argc, char **argv)
 {
-	if (argc != 2)
+	if (argc != 2 || std::string(argv[1]) != "configuration/webserv.conf")
 	{
-		std::cout << "\nLaunch with ./webserv configuration/desired_config_file.conf" << std::endl;
+		std::cout << "\nRun with \"./webserv configuration/webserv.conf\"" << std::endl;
 		return (1);
 	}
 	(void)argc;
-	std::cout << "\nCan't do anything yet. :)" << std::endl;
+	std::cout << "\nCan't do anything else yet. :)" << std::endl;
 	return (0);
 }

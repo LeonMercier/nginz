@@ -6,7 +6,7 @@
 #    By: sniemela <sniemela@student.hive.fi>        +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/05/21 12:37:52 by sniemela          #+#    #+#              #
-#    Updated: 2025/05/21 14:22:50 by sniemela         ###   ########.fr        #
+#    Updated: 2025/05/22 09:48:24 by sniemela         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -48,7 +48,7 @@ $(OBJDIR):
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	@mkdir -p $(dir $@)
-	@$(CPP) $(CFLAGS) $(INCLUDE) -c $< -o $@
+	@$(CPP) $(CFLAGS) -c $< -o $@
 	@$(OBJ_READY)
 
 
