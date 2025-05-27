@@ -1,6 +1,9 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <fstream>
+
+///// First defining everything as structs, later thinking which should be class etc.
 
 struct LocationConfig
 {
@@ -32,11 +35,37 @@ struct ConfigFile
 
 
 
+
+
+
+
+
+
+// IN PARSING:
 // open the config_file
-// skip comments (#) and first search for server block
+// skip comments (#) and first search for server block>
+// inside the server block search matching "values" for keywords
 
-std::vector<ServerConfig> ParseServer(int fd)
+std::vector<ServerConfig> ParseServer(std::ifstream &config_file)
 {
-
+	// parse individual server here and return
 }
 
+std::vector<ServerConfig> ParseServers(std::ifstream &config_file)
+{
+	// return a vector of ServerConfigs
+	// search for server blocks (there might be many) and  and push_back the return value of ParseServer(parse individual server).
+}
+
+void	Parser(char *path_to_config)
+{
+	struct ConfigFile;
+
+	std::ifstream config_file(path_to_config);
+	if (!config_file)
+	{
+		throw std::runtime_error("Opening config file");
+	}
+	std::vector<ServerConfig> servers = ParseServers(config_file);
+
+}
