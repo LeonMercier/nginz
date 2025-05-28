@@ -1,41 +1,10 @@
-#include <string>
-#include <vector>
-#include <map>
-#include <fstream>
-#include <iostream>
-#include <cstddef> // for size_t?
 
-///// First defining everything as structs, later thinking which should be class etc.
+// IN PARSING:
+// open the config_file
+// skip comments (#) and first search for server block
+// inside the server block search matching "values" for keywords
 
-struct LocationConfig
-{
-	std::string	path;
-	std::string	root;
-	std::string	index;
-	std::vector<std::string> methods;
-	bool		autoindex;
-	std::string	upload_store; // not sure if a good name
-	int			return_code;
-	std::string return_url;
-	// stuff for the cgi later cause no idea yet
-};
-
-struct ServerConfig
-{
-	std::string server_name;
-	std::string listen_ip;
-	int			listen_port;
-	std::map<int, std::string> error_pages;
-	size_t		client_max_body_size;
-	//std::vector<LocationConfig>;
-};
-
-struct ConfigFile
-{
-	std::vector<ServerConfig> servers;
-};
-
-
+#include "../inc/Structs.hpp"
 
 std::string	trimComments(const std::string &line)
 {
@@ -58,12 +27,6 @@ std::string	trimBeginningAndEnd(const std::string &line)
 	end = line.find_last_not_of("\t\n\r");
 	return (line.substr(start, end - start + 1));
 }
-
-
-// IN PARSING:
-// open the config_file
-// skip comments (#) and first search for server block
-// inside the server block search matching "values" for keywords
 
 ServerConfig parseIndividualServer(std::ifstream &config_file) // when config_file is passed as a reference, getline is not starting over from the top
 {
