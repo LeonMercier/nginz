@@ -46,9 +46,14 @@ struct ConfigFile
 // skip comments (#) and first search for server block>
 // inside the server block search matching "values" for keywords
 
-std::vector<ServerConfig> ParseServer(std::ifstream &config_file)
+ServerConfig ParseServer(std::ifstream &config_file) // when config_file is passed as a reference, getline is not starting over from the top
 {
-	// parse individual server here and return
+	// parse individual server here and return it as ServerConfig
+	// this function is called once we're already inside a server block, so "server { " is passed.
+	// in a loop:
+		// skip all comments and spaces
+		// skip newlines, tabs and carriage return (not sure if necessary)
+		// if "}" is encountered, break / return
 }
 
 std::vector<ServerConfig> ParseServers(std::ifstream &config_file)
