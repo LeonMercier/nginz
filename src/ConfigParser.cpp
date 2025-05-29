@@ -135,15 +135,44 @@ std::vector<ServerConfig> parseServers(std::ifstream &config_file)
 
 }
 
+std::vector<std::string> trimConfigToVector(std::ifstream &config_file)
+{
+	std::vector<std::string> config_vector;
+	std::string	line;
+
+	while (std::getline(config_file, line))
+	{
+		line = trimComments(line);
+		if (line.empty())
+		{
+			continue;
+		}
+		line = trimBeginningAndEnd(line);
+		if (line.empty())
+		{
+			continue;
+		}
+		config_vector.push_back(line);
+	}
+	return (config_vector);
+}
+
 void	configParser(char *path_to_config)
 {
 	struct ConfigFile;
+	std::vector<std::string> trimmed_config;
 
 	std::ifstream config_file(path_to_config);
 	if (!config_file)
 	{
 		throw std::runtime_error("Opening config file");
 	}
+	trimmed_config = trimConfigToVector(config_file);
+	std::cout << "Trimmed vector:\n";
+	for (std::vector<std::string>::iterator it = trimmed_config.begin() ; it != trimmed_config.end(); ++it)
+		std::cout << *it << "|\n";
+	// change config_file parameter to trimmed_config
+	return ;
 	std::vector<ServerConfig> servers = parseServers(config_file);
 }
 
