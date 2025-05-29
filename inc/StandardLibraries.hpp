@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <netinet/in.h>
+#include <sstream> // for istrinstream
 #include <string>
 #include <sys/epoll.h>
 #include <sys/socket.h>
