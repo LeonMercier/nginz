@@ -1,4 +1,3 @@
-
 RESET 			= \033[0;39m
 ORANGE 			= \e[1m\e[38;5;202m
 CYAN_BOLD 		= \033[1;96m
