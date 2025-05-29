@@ -12,7 +12,7 @@ public:
 	Client(int fd = -1);
 
 	void recvFrom();
-	void sendTo();
+	void sendTo(std::string response);
 
 private:
 	int			fd;
