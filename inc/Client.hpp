@@ -12,7 +12,11 @@ public:
 	Client(int fd = -1);
 
 	void recvFrom();
+<<<<<<< HEAD
 	void sendTo(std::string response);
+=======
+	void sendTo();
+>>>>>>> cd06d02 (move send() and recv() to Client class)
 
 private:
 	int			fd;
