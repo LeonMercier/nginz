@@ -6,6 +6,7 @@
 	// inside the server block search matching "values" for keywords
 
 #include "../inc/Structs.hpp"
+#include "../inc/StandardLibraries.hpp"
 
 void printServerConfigs(const std::vector<ServerConfig> &servers)
 {
@@ -320,7 +321,7 @@ std::vector<std::string> trimConfigToVector(std::ifstream &config_file)
 	return (config_vector);
 }
 
-void	configParser(char *path_to_config)
+std::vector<ServerConfig> configParser(char *path_to_config)
 {
 	struct ConfigFile;
 	std::vector<std::string> trimmed_config;
@@ -337,5 +338,6 @@ void	configParser(char *path_to_config)
 	config_file.close();
 	std::vector<ServerConfig> servers = parseServers(trimmed_config);
 	printServerConfigs(servers);
+	return servers;
 }
 
