@@ -29,8 +29,8 @@ WEBSERV			= echo "🔗 $(YELLOW)Linking webserv...$(RESET)"
 NAME = webserv
 CPPFLAGS = -Wall -Werror -Wextra -std=c++11
 CPP = c++
-SOURCES = src/main.cpp src/Client.cpp
-HEADERS = inc/Client.hpp
+SOURCES = src/main.cpp src/Client.cpp src/event_loop.cpp src/request_handler.cpp
+HEADERS = inc/Client.hpp inc/event_loop.hpp inc/request_handler.hpp
 
 SRCDIR = src
 OBJDIR = obj
