@@ -1,8 +1,9 @@
 
 // IN PARSING:
-// open the config_file
-// skip comments (#) and first search for server block
-// inside the server block search matching "values" for keywords
+// open the config_file -> trim comments and unnecessary spaces -> necessary config_file information is put into a string vector 
+// FROM THAT STRING VECTOR:
+	// search for server block(s)
+	// inside the server block search matching "values" for keywords
 
 #include "../inc/Structs.hpp"
 
@@ -28,49 +29,64 @@ std::string	trimBeginningAndEnd(const std::string &line)
 	return (line.substr(start, end - start + 1));
 }
 
-LocationConfig	parseLocationConfig(std::ifstream &config_file, std::string &location)
-{
+// LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::string &location)
+// {
 
+// }
+
+size_t	parseClientBodySize(std::string &client_max_size)
+{
+	int	coefficient = 1;
+
+	if (client_max_size.find("K") != std::string::npos)
+	{
+		coefficient = 1000;
+	}
+	else if (client_max_size.find("M") != std::string::npos)
+	{
+		coefficient = 1000000;
+	}
+	else if (client_max_size.find("G") != std::string::npos)
+	{
+		coefficient = 1000000000;
+	}
+	return (std::stol(client_max_size) * coefficient); // add overflow handling later
 }
 
-ServerConfig parseIndividualServer(std::ifstream &config_file) // when config_file is passed as a reference, getline is not starting over from the top
+ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector<std::string>::iterator it)
 {
 	// parse individual server here and return it as ServerConfig
 	// this function is called once we're already inside a server block, so "server { " is passed.
 	// in a loop:
 		// if "}" is encountered, break / return
 	ServerConfig	server;
-	std::string		line;
 	std::string		key;
 	
-	while (std::getline(config_file, line))
+	while (it != config.end())
 	{
-		line = trimComments(line);
-		if (line.empty())
+		std::cout << "it: " << *it << std::endl;
+		if (*it == "{")
 		{
 			continue;
 		}
-		line = trimBeginningAndEnd(line);
-		if (line.empty())
-		{
-			continue;
-		}
-		if (line.empty() || line == "{")
-		{
-			continue;
-		}
-		if (line == "}")
+		if (*it == "}")
 			break ;
-		// std::cout << line << std::endl;
 		std::istringstream iss;
-		iss.str(line);
+		iss.str(*it);
 		iss >> key;
 		if (key == "listen")
 		{
 			std::cout << "LISTEN FOUND!" << std::endl;
 			std::string ip_port;
 			iss >> ip_port;
-			std::cout << "IP_PORT: " << ip_port << std::endl;
+			size_t colon = ip_port.find(":");
+			if (colon == std::string::npos)
+			{
+				throw std::runtime_error("IP address missing colon");
+			}
+			server.listen_ip = ip_port.substr(0, colon);
+			server.listen_port = std::stoi(ip_port.substr(colon + 1));
+			std::cout << "IP: " << server.listen_ip << "|\nPORT: " << server.listen_port << "|"<< std::endl;
 		}
 		if (key == "server_name")
 		{
@@ -84,7 +100,8 @@ ServerConfig parseIndividualServer(std::ifstream &config_file) // when config_fi
 			std::cout << "CLIENT_MAX_BODY_SIZE FOUND!" << std::endl;
 			std::string client_max_size;
 			iss >> client_max_size;
-			std::cout << "CLIENT_MAX_SIZE: " << client_max_size << std::endl;
+			server.client_max_body_size = parseClientBodySize(client_max_size);
+			std::cout << "CLIENT_MAX_SIZE: " << server.client_max_body_size << std::endl;
 		}
 		if (key == "error_page")
 		{
@@ -98,37 +115,31 @@ ServerConfig parseIndividualServer(std::ifstream &config_file) // when config_fi
 			std::cout << "LOCATION FOUND!" << std::endl;
 			std::string	location;
 			iss >> location;
-			parseLocationConfig(config_file, location);
+			// parseLocationConfig(config, location);
+			break ;
 		}
+		it++;
 	}
 	return (server);
 }
 
-std::vector<ServerConfig> parseServers(std::ifstream &config_file)
+std::vector<ServerConfig> parseServers(std::vector<std::string> &config)
 {
 	// return a vector of ServerConfigs
 	// search for server blocks (there might be many) and  and push_back the return value of ParseServer(parse individual server).
 	// here we already skip comments and spaces from beginning and end
+
 	std::vector<ServerConfig> servers;
 	std::string	line;
 	
-	while (std::getline(config_file, line))
+	std::cout << line << std::endl;
+	for (std::vector<std::string>::iterator it = config.begin() ; it != config.end(); ++it)
 	{
-		line = trimComments(line);
-		if (line.empty())
-		{
-			continue;
-		}
-		line = trimBeginningAndEnd(line);
-		if (line.empty())
-		{
-			continue;
-		}
-		std::cout << line << std::endl;
-		if (line == "server" || line == "server {")
+		if (*it == "server" || *it == "server {") // handle this later so that it has already passed '{' before calling parseIndividualServer()
 		{
 			std::cout << "SERVER FOUND!" << std::endl;
-			servers.push_back(parseIndividualServer(config_file));
+			it++;
+			servers.push_back(parseIndividualServer(config, it));
 		}
 	}
 	return (servers);
@@ -168,11 +179,10 @@ void	configParser(char *path_to_config)
 		throw std::runtime_error("Opening config file");
 	}
 	trimmed_config = trimConfigToVector(config_file);
-	std::cout << "Trimmed vector:\n";
-	for (std::vector<std::string>::iterator it = trimmed_config.begin() ; it != trimmed_config.end(); ++it)
-		std::cout << *it << "|\n";
-	// change config_file parameter to trimmed_config
-	return ;
-	std::vector<ServerConfig> servers = parseServers(config_file);
+	// std::cout << "Trimmed vector:\n";
+	// for (std::vector<std::string>::iterator it = trimmed_config.begin() ; it != trimmed_config.end(); ++it)
+	// 	std::cout << *it << "|\n";
+	config_file.close();
+	std::vector<ServerConfig> servers = parseServers(trimmed_config);
 }
 
