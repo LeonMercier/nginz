@@ -9,12 +9,8 @@
 #include <map>
 #include <strings.h>
 
-std::string getResponse() {
-	std::string body = "<!DOCTYPE html><html><head><title>First Web Page</title></head><body>Hello Maria!</body></html>";
-	//#include "marquee.cpp"
-	std::string header = "HTTP/1.1 200 OK\nDate: Thu, 26 May 2025 10:00:00 GMT\nServer: Apache/2.4.41 (Unix)\nContent-Type: text/html; charset=UTF-8\nContent-Length:" + std::to_string(body.length()) + "\nSet-Cookie: session=some-session-id; Path=/; HttpOnly\nCache-Control: no-cache, private \n\n ";
-	return header + body;
-}
+#include "../inc/Client.hpp"
+
 
 int mvp(void)
 {
@@ -39,7 +35,10 @@ int mvp(void)
 	epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &e_event);
 
 	// apparenty this does NOT need to be zeroed (for ex. manpage example)
-	struct epoll_event events[64]; 
+	struct epoll_event events[64];
+
+	// using client_fd as index (but also storing it inside the class for now)
+	std::map<int, Client> clients;
 
 	while (true)
 	{
@@ -48,11 +47,13 @@ int mvp(void)
 			continue;
 		for (int i = 0; i < ready; i++) // loop over all new events
 		{
-			if (events[i].data.fd == socket_fd) // new connection
+			int curr_event_fd = events[i].data.fd;
+			if (curr_event_fd == socket_fd) // new connection
 			{
 				struct sockaddr_in client;
 				socklen_t size = sizeof(client);
 				int client_fd = accept(socket_fd, reinterpret_cast<sockaddr *>(&client), &size);
+				clients[client_fd] = Client(client_fd);
 
 				// epoll_ctl() takes information from e_event and puts it into
 				// the data structures held in the kernel, that is why we can
@@ -65,12 +66,20 @@ int mvp(void)
 			}
 			else // existing connection
 			{
-				char recv_buf[1000] = {0};
-				std::cout << "receiving: socket: " << socket_fd << " client fd: " << events[i].data.fd << std::endl;
-				recv(events[i].data.fd, recv_buf, 1000, MSG_DONTWAIT);
-				std::cout << recv_buf << std::endl;
-				std::string response = getResponse();
-				send(events[i].data.fd, response.c_str(), response.length(), MSG_NOSIGNAL); 
+				if (clients.find(curr_event_fd) == clients.end()) {
+					std::cout << "Error: client not found" << std::endl;
+					break;
+				}
+				std::cout << "receiving: socket: " << socket_fd;
+				std::cout << " client fd: " << curr_event_fd << std::endl;
+
+				if (events[i].events & EPOLLIN) {
+					clients[curr_event_fd].recvFrom();
+				}
+				if (events[i].events & EPOLLOUT) {
+					clients[curr_event_fd].sendTo();
+				}
+
 			}
 		}
 	}
