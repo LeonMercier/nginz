@@ -29,10 +29,10 @@ std::string	trimBeginningAndEnd(const std::string &line)
 	return (line.substr(start, end - start + 1));
 }
 
-// LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::string &location)
-// {
+LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::vector<std::string>::iterator &it)
+{
 
-// }
+}
 
 size_t	parseClientBodySize(std::string &client_max_size)
 {
@@ -53,12 +53,13 @@ size_t	parseClientBodySize(std::string &client_max_size)
 	return (std::stol(client_max_size) * coefficient); // add overflow handling later
 }
 
+// parse individual server here and return it as ServerConfig
+// this function is called once we're already inside a server block (so "server { " is passed.)
+// in a loop:
+	// if "}" is encountered, break / return
+
 ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector<std::string>::iterator it)
 {
-	// parse individual server here and return it as ServerConfig
-	// this function is called once we're already inside a server block, so "server { " is passed.
-	// in a loop:
-		// if "}" is encountered, break / return
 	ServerConfig	server;
 	std::string		key;
 	
@@ -67,7 +68,7 @@ ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector
 		std::cout << "it: " << *it << std::endl;
 		if (*it == "{")
 		{
-			continue;
+			throw std::runtime_error("nested blocks in configuration file");
 		}
 		if (*it == "}")
 			break ;
@@ -88,14 +89,26 @@ ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector
 			server.listen_port = std::stoi(ip_port.substr(colon + 1));
 			std::cout << "IP: " << server.listen_ip << "|\nPORT: " << server.listen_port << "|"<< std::endl;
 		}
-		if (key == "server_name")
+		else if (key == "server_name")
 		{
 			std::cout << "SERVER_NAME FOUND!" << std::endl;
-			std::string server_name;
-			iss >> server_name;
-			std::cout << "SERVER_NAME: " << server_name << std::endl;
+			std::string name;
+			while (iss >> name)
+			{
+				if (!name.empty() && name.back() == ';')
+				{
+					name.pop_back();
+					server.server_names.push_back(name);
+					break;
+				}
+				server.server_names.push_back(name);
+			}
+			for (size_t i = 0; i < server.server_names.size(); ++i)
+			{
+				std::cout << "SERVER_NAME[" << i << "]: " << server.server_names[i] << std::endl;
+			}
 		}
-		if (key == "client_max_body_size")
+		else if (key == "client_max_body_size")
 		{
 			std::cout << "CLIENT_MAX_BODY_SIZE FOUND!" << std::endl;
 			std::string client_max_size;
@@ -103,20 +116,27 @@ ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector
 			server.client_max_body_size = parseClientBodySize(client_max_size);
 			std::cout << "CLIENT_MAX_SIZE: " << server.client_max_body_size << std::endl;
 		}
-		if (key == "error_page")
+		else if (key == "error_page")
 		{
 			std::cout << "ERROR_PAGE FOUND!" << std::endl;
+			int	code;
 			std::string error_page;
+			iss >> code;
 			iss >> error_page;
-			std::cout << "ERROR_PAGE: " << error_page << std::endl;
+			error_page.pop_back();
+			server.error_pages[code] = error_page;
+			std::cout << "ERROR_PAGES MAP IS: \n";
+    		for (const auto& pair : server.error_pages)
+			{
+       			std::cout << "int: " << pair.first << "\nurl: " << pair.second << "\n";
+   			}
 		}
-		if (key == "location")
+		else if (key == "location")
 		{
 			std::cout << "LOCATION FOUND!" << std::endl;
-			std::string	location;
-			iss >> location;
-			// parseLocationConfig(config, location);
-			break ;
+			// std::string	location;
+			// iss >> location;
+			server.locations.push_back(parseLocationConfig(config, it));
 		}
 		it++;
 	}

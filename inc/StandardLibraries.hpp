@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <sstream> // for istrinstream
 #include <string>
-#include <sys/epoll.h>
+// #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>

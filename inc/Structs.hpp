@@ -17,12 +17,12 @@ struct LocationConfig
 
 struct ServerConfig
 {
-	std::string server_name;
+	std::vector<std::string> server_names;
 	std::string listen_ip;
 	int			listen_port;
 	std::map<int, std::string> error_pages;
 	size_t		client_max_body_size;
-	//std::vector<LocationConfig>;
+	std::vector<LocationConfig> locations;
 };
 
 struct ConfigFile
