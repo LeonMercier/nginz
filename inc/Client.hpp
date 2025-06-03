@@ -4,19 +4,15 @@
 #include <iostream>
 #include <sys/epoll.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
+// #include <netinet/in.h>
+// #include <unistd.h>
 
 class Client {
 public:
 	Client(int fd = -1);
 
 	void recvFrom();
-<<<<<<< HEAD
 	void sendTo(std::string response);
-=======
-	void sendTo();
->>>>>>> cd06d02 (move send() and recv() to Client class)
 
 private:
 	int			fd;
