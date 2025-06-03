@@ -1,15 +1,3 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: sniemela <sniemela@student.hive.fi>        +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2025/05/21 12:37:52 by sniemela          #+#    #+#              #
-#    Updated: 2025/05/22 09:48:24 by sniemela         ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
-
 RESET 			= \033[0;39m
 ORANGE 			= \e[1m\e[38;5;202m
 CYAN_BOLD 		= \033[1;96m
@@ -29,7 +17,12 @@ WEBSERV			= echo "🔗 $(YELLOW)Linking webserv...$(RESET)"
 NAME = webserv
 CPPFLAGS = -Wall -Werror -Wextra -std=c++11
 CPP = c++
-SOURCES = src/main.cpp src/Client.cpp src/event_loop.cpp src/request_handler.cpp
+SOURCES = src/main.cpp \
+			src/Client.cpp \
+			src/ConfigParser.cpp \
+			src/event_loop.cpp \
+			src/request_handler.cpp
+			
 HEADERS = inc/Client.hpp inc/event_loop.hpp inc/request_handler.hpp
 
 SRCDIR = src

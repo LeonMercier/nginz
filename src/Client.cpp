@@ -1,3 +1,4 @@
+
 #include "../inc/Client.hpp"
 #include "../inc/request_handler.hpp"
 
@@ -9,6 +10,7 @@ static std::string getResponse() {
 }
 
 Client::Client(int fd) : fd(fd)  {}
+
 
 bool isCompleteRequest(std::string request) {
 	return request.length() > 0;

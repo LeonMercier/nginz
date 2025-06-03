@@ -1,3 +1,4 @@
+
 -----------
 21/5/25
 -----------
@@ -10,3 +11,9 @@ We launch the program: ./executable "configuration_file", so for example ./webse
 
 
 Not sure if we should follow c++11 (older), c++20 (newer) or some else standar, have to study the differences a bit.
+
+-----------
+23/5/2025
+-----------
+
+If we want to add cookies, config file needs session defined (on). For now, not included.
