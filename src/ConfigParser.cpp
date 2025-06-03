@@ -96,17 +96,17 @@ LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::vector
 	std::string	key;
 
 	location.path = path;
+	location.autoindex = false;
+	location.return_code = 0;
+	location.return_url = "";
+
 	while (it != config.end())
 	{
 	//	std::cout << "it: " << *it << std::endl;
 		std::istringstream iss;
 		iss.str(*it);
 		iss >> key;
-		if (key == "}")
-		{
-			break ;
-		}
-		else if (key == "root")
+		if (key == "root")
 		{
 			iss >> key;
 			key.pop_back();
@@ -134,10 +134,6 @@ LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::vector
 			{
 				location.autoindex = true;
 			}
-			else
-			{
-				location.autoindex = false;
-			}
 		}
 		else if (key == "upload_store")
 		{
@@ -159,6 +155,10 @@ LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::vector
 				key.pop_back();
 			}
 			location.return_url = key;
+		}
+		else if (key == "}")
+		{
+			break ;
 		}
 		it++;
 	}
