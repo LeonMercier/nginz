@@ -2,4 +2,4 @@
 
 #include "Structs.hpp"
 
-void	configParser(char *path_to_config);
+std::vector<ServerConfig> configParser(char *path_to_config);
