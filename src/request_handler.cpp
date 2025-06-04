@@ -37,7 +37,7 @@ bool ends_with(const std::string& str, const std::string& suffix) {
            str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-std::string getResponse(std::string request) {
+Response getResponse(std::string request) {
 	Response response;
 
 	std::istringstream iss(request);
@@ -57,5 +57,5 @@ std::string getResponse(std::string request) {
 	}
 
 	response.full_response = response.header + response.body;
-	return response.header + response.body;
+	return response;
 }

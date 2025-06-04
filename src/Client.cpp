@@ -2,17 +2,6 @@
 #include "../inc/Client.hpp"
 #include "../inc/request_handler.hpp"
 
-static std::string getResponseTEST(std::string request) {
-
-	std::cout << "getResponse() got request: " << std::endl;
-	std::cout << request << std::endl;
-
-	std::string body = "<!DOCTYPE html><html><head><title>First Web Page</title></head><body>Hello Maria!</body></html>";
-	//#include "marquee.cpp"
-	std::string header = "HTTP/1.1 200 OK\nDate: Thu, 26 May 2025 10:00:00 GMT\nServer: Apache/2.4.41 (Unix)\nContent-Type: text/html; charset=UTF-8\nContent-Length:" + std::to_string(body.length()) + "\nSet-Cookie: session=some-session-id; Path=/; HttpOnly\nCache-Control: no-cache, private \n\n ";
-	return header + body;
-}
-
 Client::Client(ServerConfig config, int fd) : config(config), fd(fd)  {}
 
 
@@ -72,7 +61,8 @@ void Client::recvFrom(int epoll_fd) {
 			auto end = recv_buf.find(header_end) + header_end.length();
 			recv_queue.push_back(recv_buf.substr(0, end));
 			recv_buf.erase(0, end);
-			send_queue.push_back(getResponseTEST(recv_queue.front()));
+			struct Response response = getResponse(recv_queue.front());
+			send_queue.push_back(response.full_response);
 			recv_queue.erase(recv_queue.begin());
 			
 			recv_buf = "";

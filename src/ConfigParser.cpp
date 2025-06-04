@@ -337,7 +337,7 @@ std::vector<ServerConfig> configParser(char *path_to_config)
 	// 	std::cout << *it << "|\n";
 	config_file.close();
 	std::vector<ServerConfig> servers = parseServers(trimmed_config);
-	printServerConfigs(servers);
+	//printServerConfigs(servers);
 	return servers;
 }
 

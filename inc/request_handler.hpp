@@ -18,4 +18,4 @@ struct Response {
 	std::string full_response = "";
 };
 
-std::string getResponse(std::string request);
+Response getResponse(std::string request);
