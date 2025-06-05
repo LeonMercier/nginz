@@ -7,7 +7,7 @@ Client::Client(ServerConfig config, int fd) : config(config), fd(fd)  {}
 
 bool isCompleteRequest(std::string request) {
 	if (request.find("\r\n\r\n") != std::string::npos) {
-		std::cout << "found end of request" << std::endl;
+		//std::cout << "found end of request" << std::endl;
 		return true;
 	}
 	return false;
@@ -37,8 +37,8 @@ static void closeConnection(int epoll_fd, int client_fd) {
 // TODO: only handles GET for now
 void Client::recvFrom(int epoll_fd) {
 	// sleep(1);
-	std::cout << "entered recvFrom" << std::endl;
-	char buf[50] = {0};
+	//std::cout << "entered recvFrom" << std::endl;
+	char buf[1000] = {0};
 	std::string header_end = "\r\n\r\n";
 
 	int bytes_read = recv(fd, buf, sizeof(buf) -1, MSG_DONTWAIT);
@@ -46,11 +46,11 @@ void Client::recvFrom(int epoll_fd) {
 	// std::cout << recv_buf << std::endl;
 	recv_buf += std::string(buf, bytes_read);
 	if (bytes_read > 0) {
-		std::cout << "recvFrom: read " << bytes_read << " bytes" << std::endl;
+		//std::cout << "recvFrom: read " << bytes_read << " bytes" << std::endl;
 		if (isCompleteRequest(recv_buf)) {
-			std::cout << "##### RECEIVED REQUEST #####" << std::endl;
-			std::cout << recv_buf << std::endl;
-			std::cout << "############################" << std::endl;
+			//std::cout << "##### RECEIVED REQUEST #####" << std::endl;
+			//std::cout << recv_buf << std::endl;
+			//std::cout << "############################" << std::endl;
 			// send_buf = getResponse(recv_buf);
 			//
 			// TODO: do we decide, based on the request, whether we want to
@@ -70,7 +70,7 @@ void Client::recvFrom(int epoll_fd) {
 			changeEpollMode(epoll_fd, fd, EPOLLOUT);
 		}
 	} else if (bytes_read == 0) {
-		std::cout << "recvFrom(): read 0 bytes" << std::endl;
+		//std::cout << "recvFrom(): read 0 bytes" << std::endl;
 		// TODO: why does epoll_wait keep triggering when there is nothing to
 		// read?
 		closeConnection(epoll_fd, fd);
@@ -82,7 +82,7 @@ void Client::recvFrom(int epoll_fd) {
 }
 
 void Client::sendTo(int epoll_fd) {
-	std::cout << "entered sendTo()" << std::endl;
+	//std::cout << "entered sendTo()" << std::endl;
 	if (send_buf.empty()) {
 		if (send_queue.size() > 0) {
 			send_buf = send_queue.front();
@@ -95,7 +95,7 @@ void Client::sendTo(int epoll_fd) {
 	// TODO: currently not throwing here because maybe this is not a fatal error
 		std::cerr << "send() returned -1" << std::endl;
 	}
-	std::cout << "sent " << bytes_sent << " bytes" << std::endl;
+	//std::cout << "sent " << bytes_sent << " bytes" << std::endl;
 	send_buf.erase(0, bytes_sent);
 
 	// we have sent the whole response

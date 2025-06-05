@@ -13,57 +13,57 @@ void printServerConfigs(const std::vector<ServerConfig> &servers)
 	for (size_t i = 0; i < servers.size(); ++i)
 	{
 		const ServerConfig &server = servers[i];
-		std::cout << "======== SERVER " << i + 1 << " ========" << std::endl;
+		//std::cout << "======== SERVER " << i + 1 << " ========" << std::endl;
 
 		// Server names
-		std::cout << "Server Names: ";
-		for (size_t j = 0; j < server.server_names.size(); ++j)
-		{
-			std::cout << server.server_names[j];
-			if (j + 1 < server.server_names.size())
-				std::cout << ", ";
-		}
-		std::cout << std::endl;
+		//std::cout << "Server Names: ";
+		//for (size_t j = 0; j < server.server_names.size(); ++j)
+		//{
+			//std::cout << server.server_names[j];
+			//if (j + 1 < server.server_names.size())
+				//std::cout << ", ";
+		//}
+		//std::cout << std::endl;
 
 		// Listen IP/Port
-		std::cout << "Listen IP: " << server.listen_ip << std::endl;
-		std::cout << "Listen Port: " << server.listen_port << std::endl;
+		//std::cout << "Listen IP: " << server.listen_ip << std::endl;
+		//std::cout << "Listen Port: " << server.listen_port << std::endl;
 
 		// Error pages
-		std::cout << "Error Pages:" << std::endl;
+		//std::cout << "Error Pages:" << std::endl;
 		for (std::map<int, std::string>::const_iterator it = server.error_pages.begin(); it != server.error_pages.end(); ++it)
 		{
-			std::cout << "  " << it->first << " => " << it->second << std::endl;
+			//std::cout << "  " << it->first << " => " << it->second << std::endl;
 		}
 
 		// Client max body size
-		std::cout << "Client Max Body Size: " << server.client_max_body_size << std::endl;
+		//std::cout << "Client Max Body Size: " << server.client_max_body_size << std::endl;
 
 		// Locations
-		std::cout << "Locations: " << std::endl;
+		//std::cout << "Locations: " << std::endl;
 		for (size_t k = 0; k < server.locations.size(); ++k)
 		{
 			const LocationConfig &loc = server.locations[k];
-			std::cout << "  --- Location " << k + 1 << " ---" << std::endl;
-			std::cout << "  Path: " << loc.path << std::endl;
-			std::cout << "  Root: " << loc.root << std::endl;
-			std::cout << "  Index: " << loc.index << std::endl;
-			std::cout << "  Methods: ";
-			for (size_t m = 0; m < loc.methods.size(); ++m)
-			{
-				std::cout << loc.methods[m];
-				if (m + 1 < loc.methods.size())
-					std::cout << ", ";
-			}
-			std::cout << std::endl;
-			std::cout << "  Autoindex: " << (loc.autoindex ? "on" : "off") << std::endl;
-			std::cout << "  Upload Store: " << loc.upload_store << std::endl;
+			//std::cout << "  --- Location " << k + 1 << " ---" << std::endl;
+			//std::cout << "  Path: " << loc.path << std::endl;
+			//std::cout << "  Root: " << loc.root << std::endl;
+			//std::cout << "  Index: " << loc.index << std::endl;
+			//std::cout << "  Methods: ";
+			//for (size_t m = 0; m < loc.methods.size(); ++m)
+			//{
+				//std::cout << loc.methods[m];
+				//if (m + 1 < loc.methods.size())
+					//std::cout << ", ";
+			//}
+			//std::cout << std::endl;
+			//std::cout << "  Autoindex: " << (loc.autoindex ? "on" : "off") << std::endl;
+			//std::cout << "  Upload Store: " << loc.upload_store << std::endl;
 			if (loc.return_code != 0 || !loc.return_url.empty())
 			{
-				std::cout << "  Return: " << loc.return_code << " " << loc.return_url << std::endl;
+				//std::cout << "  Return: " << loc.return_code << " " << loc.return_url << std::endl;
 			}
 		}
-		std::cout << std::endl;
+		//std::cout << std::endl;
 	}
 }
 
@@ -103,7 +103,7 @@ LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::vector
 
 	while (it != config.end())
 	{
-	//	std::cout << "it: " << *it << std::endl;
+	//	//std::cout << "it: " << *it << std::endl;
 		std::istringstream iss;
 		iss.str(*it);
 		iss >> key;
@@ -198,7 +198,7 @@ ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector
 	
 	while (it != config.end())
 	{
-	//	std::cout << "it: " << *it << std::endl;
+	//	//std::cout << "it: " << *it << std::endl;
 		if (*it == "{")
 		{
 			throw std::runtime_error("nested blocks in configuration file");
@@ -210,7 +210,7 @@ ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector
 		iss >> key;
 		if (key == "listen")
 		{
-	//		std::cout << "LISTEN FOUND!" << std::endl;
+	//		//std::cout << "LISTEN FOUND!" << std::endl;
 			std::string ip_port;
 			iss >> ip_port;
 			size_t colon = ip_port.find(":");
@@ -220,11 +220,11 @@ ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector
 			}
 			server.listen_ip = ip_port.substr(0, colon);
 			server.listen_port = std::stoi(ip_port.substr(colon + 1));
-	//		std::cout << "IP: " << server.listen_ip << "|\nPORT: " << server.listen_port << "|"<< std::endl;
+	//		//std::cout << "IP: " << server.listen_ip << "|\nPORT: " << server.listen_port << "|"<< std::endl;
 		}
 		else if (key == "server_name")
 		{
-		//	std::cout << "SERVER_NAME FOUND!" << std::endl;
+		//	//std::cout << "SERVER_NAME FOUND!" << std::endl;
 			std::string name;
 			while (iss >> name)
 			{
@@ -238,35 +238,35 @@ ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector
 			}
 			// for (size_t i = 0; i < server.server_names.size(); ++i)
 			// {
-			// 	std::cout << "SERVER_NAME[" << i << "]: " << server.server_names[i] << std::endl;
+			// 	//std::cout << "SERVER_NAME[" << i << "]: " << server.server_names[i] << std::endl;
 			// }
 		}
 		else if (key == "client_max_body_size")
 		{
-		//	std::cout << "CLIENT_MAX_BODY_SIZE FOUND!" << std::endl;
+		//	//std::cout << "CLIENT_MAX_BODY_SIZE FOUND!" << std::endl;
 			std::string client_max_size;
 			iss >> client_max_size;
 			server.client_max_body_size = parseClientBodySize(client_max_size);
-		//	std::cout << "client_max_body_size: " << server.client_max_body_size << std::endl;
+		//	//std::cout << "client_max_body_size: " << server.client_max_body_size << std::endl;
 		}
 		else if (key == "error_page")
 		{
-		//	std::cout << "ERROR_PAGE FOUND!" << std::endl;
+		//	//std::cout << "ERROR_PAGE FOUND!" << std::endl;
 			int	code;
 			std::string error_page;
 			iss >> code;
 			iss >> error_page;
 			error_page.pop_back();
 			server.error_pages[code] = error_page;
-		//	std::cout << "ERROR_PAGES MAP IS: \n";
+		//	//std::cout << "ERROR_PAGES MAP IS: \n";
     		// for (const auto& pair : server.error_pages)
 			// {
-       		// 	std::cout << "int: " << pair.first << "\nurl: " << pair.second << "\n";
+       		// 	//std::cout << "int: " << pair.first << "\nurl: " << pair.second << "\n";
    			// }
 		}
 		else if (key == "location")
 		{
-		//	std::cout << "LOCATION FOUND!" << std::endl;
+		//	//std::cout << "LOCATION FOUND!" << std::endl;
 			std::string	location;
 			iss >> location;
 			server.locations.push_back(parseLocationConfig(config, it, location));
@@ -285,12 +285,12 @@ std::vector<ServerConfig> parseServers(std::vector<std::string> &config)
 	std::vector<ServerConfig> servers;
 	std::string	line;
 	
-	std::cout << line << std::endl;
+	//std::cout << line << std::endl;
 	for (std::vector<std::string>::iterator it = config.begin() ; it != config.end(); ++it)
 	{
 		if (*it == "server" || *it == "server {") // handle this later so that it has already passed '{' before calling parseIndividualServer()
 		{
-	//		std::cout << "SERVER FOUND!" << std::endl;
+	//		//std::cout << "SERVER FOUND!" << std::endl;
 			it++;
 			servers.push_back(parseIndividualServer(config, it));
 		}
@@ -332,9 +332,9 @@ std::vector<ServerConfig> configParser(char *path_to_config)
 		throw std::runtime_error("Opening config file");
 	}
 	trimmed_config = trimConfigToVector(config_file);
-	// std::cout << "Trimmed vector:\n";
+	// //std::cout << "Trimmed vector:\n";
 	// for (std::vector<std::string>::iterator it = trimmed_config.begin() ; it != trimmed_config.end(); ++it)
-	// 	std::cout << *it << "|\n";
+	// 	//std::cout << *it << "|\n";
 	config_file.close();
 	std::vector<ServerConfig> servers = parseServers(trimmed_config);
 	//printServerConfigs(servers);
