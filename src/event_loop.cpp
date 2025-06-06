@@ -116,7 +116,7 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 					break;
 				}
 				// std::cout << "receiving: socket: " << socket_fd;
-				std::cout << " client fd: " << curr_event_fd << std::endl;
+				//std::cout << " client fd: " << curr_event_fd << std::endl;
 
 				if (events[i].events & EPOLLIN) {
 					clients.at(curr_event_fd).recvFrom(epoll_fd);
