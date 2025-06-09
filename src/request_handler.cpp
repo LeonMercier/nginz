@@ -28,7 +28,7 @@ static std::string getHttpDate() {
 }
 
 static void createHeader(Response *response, std::string content_type) {
-	response->header = "HTTP/1.1 " + response->status_code_str +"\r\n"
+	response->header = "HTTP/1.1 " + std::to_string(response->status_code) + " " + response->status_code_str +"\r\n"
 	"Date: " + getHttpDate() + "\r\n"
 	"Server: OverThirty_Webserv\r\n"
 	"Content-Type: " + content_type + "\r\n"
@@ -70,6 +70,7 @@ Response getResponse(std::string request) {
 
 	if (response.method == "GET") {
 		if (response.path == "/") {
+			setStatusCode(&response, 200, "OK");
 			createBody(&response, root + "/index.html");
 			createHeader(&response, "text/html; charset=UTF-8");
 			response.full_response = response.header + response.body;
