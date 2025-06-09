@@ -4,8 +4,8 @@
 
 static void createServerSocket(
 	int epoll_fd,
-	std::map<int, ServerConfig> &servers,
-	ServerConfig config)
+	std::map<int, std::vector<ServerConfig>> &servers,
+	std::vector<ServerConfig> configs)
 {
 	int socket_fd = socket(AF_INET, (SOCK_STREAM | SOCK_NONBLOCK), 0);
 	if (socket_fd < 0) { throw std::runtime_error("socket() failed"); };
@@ -23,19 +23,30 @@ static void createServerSocket(
 	// if (fcntl(socket_fd, F_SETFL, FD_CLOEXEC) < 0) {
 	// 	throw std::runtime_error("fcntl() failed"); 
 	// }
-	
-	// Set the address for the socket
-	sockaddr_in serv_addr{};				// Struct for defining socket address
-	serv_addr.sin_family = AF_INET;			// Tells the socket we're using IPv4.
-	serv_addr.sin_port = htons(config.listen_port);		// Sets the port number to 8080
-	serv_addr.sin_addr.s_addr = INADDR_ANY; // Listen to all interfaces
 
+	// Set the address for the socket
+	struct addrinfo hints {};
+	memset(&hints, 0, sizeof(hints)); // is this needed?
+	hints.ai_family = AF_INET; // IPV4
+	hints.ai_socktype = SOCK_STREAM;
+	struct addrinfo *gai_result;
+	if (getaddrinfo(
+		configs.front().listen_ip.c_str(),
+		std::to_string(configs.front().listen_port).c_str(),
+		&hints,
+		&gai_result) < 0)
+	{
+		throw std::runtime_error("getaddrinfo() failed");
+	}
+	
 	// Bind the address to the socket
-	if (bind(socket_fd, reinterpret_cast<sockaddr *>(&serv_addr),
-		sizeof(serv_addr)) < 0)
+	// gai_result is a linked list of possibly multiple structs, but for now
+	// we will only check the first struct
+	if (bind(socket_fd, gai_result->ai_addr, gai_result->ai_addrlen) < 0)
 	{
 		throw std::runtime_error("bind() failed");
 	}
+	freeaddrinfo(gai_result);
 
 	// Socket is ready to listen to incoming connection requests
 	// 256 is the max number of connections
@@ -50,17 +61,36 @@ static void createServerSocket(
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &e_event) < 0) {
 		throw std::runtime_error("epoll_ctl() failed"); 
 	}
-	servers[socket_fd] = config;
+	for (auto it = configs.begin(); it != configs.end(); it++) {
+		servers[socket_fd].push_back(*it);
+	}
+}
+
+// creates a map where the combination of ip and port is the key and all 
+// configs with the same ip and port are added to that
+static std::map<std::string, std::vector<ServerConfig>> sortConfigs(
+	std::vector<ServerConfig> configs)
+{
+	std::map<std::string, std::vector<ServerConfig>> sorted;
+
+	for (auto it = configs.begin(); it != configs.end(); it++) {
+		std::string id = it->listen_ip + std::to_string(it->listen_port);
+		sorted[id].push_back(*it);
+	}
+	return sorted;
 }
 
 int eventLoop(std::vector<ServerConfig> server_configs)
 {
-	int epoll_fd = epoll_create1(0);
-	if (epoll_fd < 0) { throw std::runtime_error("epoll_create1() failed"); };
+	std::map<std::string, std::vector<ServerConfig>> per_socket_configs =
+		sortConfigs(server_configs);
 
-	std::map<int, ServerConfig> servers;
-	for (auto it = server_configs.begin(); it != server_configs.end(); it++) {
-		createServerSocket(epoll_fd, servers, *it);
+	int epoll_fd = epoll_create(1);
+	if (epoll_fd < 0) { throw std::runtime_error("epoll_create() failed"); };
+
+	std::map<int, std::vector<ServerConfig>> servers;
+	for (auto it = per_socket_configs.begin(); it != per_socket_configs.end(); it++) {
+		createServerSocket(epoll_fd, servers, it->second);
 	}
 
 	// apparenty this does NOT need to be zeroed (for ex. manpage example)
@@ -91,8 +121,12 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 					throw std::runtime_error("accept() failed");
 				};
 
-				 clients.insert({client_fd,
+				auto retval = clients.insert({client_fd,
 					Client(servers[curr_event_fd], epoll_fd, client_fd)});
+				if (retval.second == false) {
+					throw std::runtime_error("failed to add new client; \
+							  client already exists?");
+				}
 
 				// epoll_ctl() takes information from e_event and puts it into
 				// the data structures held in the kernel, that is why we can
@@ -112,18 +146,18 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 			}
 			else // existing connection
 			{
-				if (clients.find(curr_event_fd) == clients.end()) {
-					std::cout << "Error: client not found" << std::endl;
-					break;
-				}
 				// std::cout << "receiving: socket: " << socket_fd;
 				//std::cout << " client fd: " << curr_event_fd << std::endl;
 
+				// map::at() will throw std::out_of_range if not found
 				if (events[i].events & EPOLLIN) {
 					clients.at(curr_event_fd).recvFrom();
 				}
 				if (events[i].events & EPOLLOUT) {
 					clients.at(curr_event_fd).sendTo();
+				}
+				if (clients.at(curr_event_fd).getState() == DISCONNECT) {
+					clients.erase(curr_event_fd);
 				}
 
 			}

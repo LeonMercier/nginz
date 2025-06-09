@@ -14,8 +14,11 @@
 #include <sstream> // for istrinstream
 #include <stdexcept>
 #include <string>
+#include <string.h> //memset
 //#include <strings.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+// #include <sys/types.h>
+#include <netdb.h> // struct addrinfo
 #include <unistd.h> // sleep()
 #include <vector>

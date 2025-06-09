@@ -17,3 +17,10 @@ Not sure if we should follow c++11 (older), c++20 (newer) or some else standar, 
 -----------
 
 If we want to add cookies, config file needs session defined (on). For now, not included.
+
+
+-----------
+12/6/2025
+-----------
+* In HTTP 1.1 Connection: Keep-Alive is the default and Close is used if requested
+* Response is sent also in case of POST and DELETE (200 series codes)
