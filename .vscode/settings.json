@@ -57,6 +57,9 @@
 		"text_encoding": "cpp",
 		"cinttypes": "cpp",
 		"typeinfo": "cpp",
-		"variant": "cpp"
+		"variant": "cpp",
+		"codecvt": "cpp",
+		"bitset": "cpp",
+		"regex": "cpp"
 	}
 }

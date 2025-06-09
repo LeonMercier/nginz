@@ -63,7 +63,7 @@ void Client::handleCompleteRequest(int end, int body_length) {
 	
 	recv_queue.push_back(recv_buf.substr(0, end + body_length));
 	recv_buf.erase(0, end + body_length);
-	struct Response response = getResponse(recv_queue.front(), config);
+	struct Response response = getResponse(recv_queue.front(), config, 0);
 	send_queue.push_back(response.full_response);
 	recv_queue.erase(recv_queue.begin());
 	
