@@ -1,3 +1,4 @@
+#include "Structs.hpp"
 #include <string>
 #include <ctime>
 #include <iomanip>
@@ -20,4 +21,5 @@ struct Response {
 	bool connection_is_close = false;
 };
 
-Response getResponse(std::string request);
+int getPostContentLength (std::string request);
+Response getResponse(std::string request, ServerConfig config);

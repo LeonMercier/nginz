@@ -91,7 +91,8 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 					throw std::runtime_error("accept() failed");
 				};
 
-				 clients.insert({client_fd, Client(servers[curr_event_fd], client_fd)});
+				 clients.insert({client_fd,
+					Client(servers[curr_event_fd], epoll_fd, client_fd)});
 
 				// epoll_ctl() takes information from e_event and puts it into
 				// the data structures held in the kernel, that is why we can
@@ -119,10 +120,10 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 				//std::cout << " client fd: " << curr_event_fd << std::endl;
 
 				if (events[i].events & EPOLLIN) {
-					clients.at(curr_event_fd).recvFrom(epoll_fd);
+					clients.at(curr_event_fd).recvFrom();
 				}
 				if (events[i].events & EPOLLOUT) {
-					clients.at(curr_event_fd).sendTo(epoll_fd);
+					clients.at(curr_event_fd).sendTo();
 				}
 
 			}

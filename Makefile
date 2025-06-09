@@ -15,7 +15,7 @@ REMAKE			= echo "💡 $(GREEN)Successfully rebuilt everything!$(RESET)"
 WEBSERV			= echo "🔗 $(YELLOW)Linking webserv...$(RESET)"
 
 NAME = webserv
-CPPFLAGS = -std=c++17 #-Wall -Werror -Wextra
+CPPFLAGS = -std=c++17 -Wall -Werror -Wextra
 CPP = c++
 SOURCES = src/main.cpp \
 			src/Client.cpp \
