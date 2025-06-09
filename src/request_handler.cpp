@@ -1,4 +1,5 @@
 #include "../inc/request_handler.hpp"
+#include "../inc/Webserv.hpp"
 
 int getPostContentLength (std::string request) {
 	std::istringstream iss(request);
@@ -54,6 +55,7 @@ bool ends_with(const std::string& str, const std::string& suffix) {
            str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+
 Response getResponse(std::string request) {
 	Response response;
 
@@ -87,7 +89,12 @@ Response getResponse(std::string request) {
 			createHeader(&response, "image/jpeg");
 		}
 	}
-
+	// response.body = generateAutoIndex("images/");
+	// response.header = "HTTP/1.1 200 OK\r\n"
+	// "Content-Type: text/html; charset=UTF-8\r\n"
+	// "Content-Length: " + std::to_string(response.body.length()) + "\r\n"
+	// "Connection: close\r\n"
+	// + "\r\n";
 	response.full_response = response.header + response.body;
 	return response;
 }
