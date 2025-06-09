@@ -10,5 +10,24 @@
     <img src="potato_chip.png" alt="My Potato Chip" />
     <img src="dip.png" alt="My Potato Dip" />
     <img src="micro_chip.jpg" alt="My Micro Chip" />
+
+
+    <h2>Upload a file</h2>
+    <form>
+        <input type="file" id="fileUpload" name="fileUpload">
+        <input type="submit" value="Upload">
+    </form>
+
+    <h2>Submit a form</h2>
+	<form action="/submit" method="post">
+	  <label for="name">Name:</label>
+	  <input type="text" id="name" name="name" required>
+	  
+	  <label for="email">Email:</label>
+	  <input type="email" id="email" name="email" required>
+	  
+	  <input type="submit" value="Submit">
+	</form>
+
 </body>
 </html>
