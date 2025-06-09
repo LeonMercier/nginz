@@ -14,9 +14,9 @@ public:
 	void handleCompleteRequest(int);
 
 private:
-	int				fd;
-	int				epoll_fd;
 	ServerConfig	config;
+	int				epoll_fd;
+	int				fd;
 	std::string		recv_buf;
 	std::string		send_buf;
 	std::vector<std::string> recv_queue;
