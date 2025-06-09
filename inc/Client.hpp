@@ -11,7 +11,7 @@ public:
 
 	void recvFrom();
 	void sendTo();
-	void handleCompleteRequest(int);
+	void handleCompleteRequest(int, int);
 
 private:
 	ServerConfig	config;

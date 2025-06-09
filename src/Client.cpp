@@ -51,16 +51,18 @@ static t_method getRequestMethod(std::string request) {
 	}
 }
 
-void Client::handleCompleteRequest(int end) {
+// TODO: suppor request pipelining
+void Client::handleCompleteRequest(int end, int body_length) {
 	std::cout << "##### RECEIVED REQUEST #####" << std::endl;
-	std::cout << recv_buf << std::endl;
+	std::cout << recv_buf.substr(0, end + body_length)<< std::endl;
 	std::cout << "############################" << std::endl;
 	
 	// TODO: sometimes the connection is closed without sending anything
 	// back? So we cannot always toggle to EPOLLOUT?
 	 
-	recv_queue.push_back(recv_buf.substr(0, end));
-	recv_buf.erase(0, end);
+	
+	recv_queue.push_back(recv_buf.substr(0, end + body_length));
+	recv_buf.erase(0, end + body_length);
 	struct Response response = getResponse(recv_queue.front(), config);
 	send_queue.push_back(response.full_response);
 	recv_queue.erase(recv_queue.begin());
@@ -101,7 +103,7 @@ void Client::recvFrom() {
 		size_t end = recv_buf.find(header_end) + header_end.length();
 
 		if (method == GET) {
-			handleCompleteRequest(end);
+			handleCompleteRequest(end, 0);
 
 		} else if (method == POST) {
 			// TODO: would it be ok to try to receive everything and then
@@ -110,7 +112,7 @@ void Client::recvFrom() {
 			if (recv_buf.length() >= end + content_length) {
 				std::cout << "Buf: " << recv_buf.length() << " target: "\
 					<< end << " + " << content_length << std::endl;
-				handleCompleteRequest(end);
+				handleCompleteRequest(end, content_length);
 			}
 			// if recv_buf is smaller than header + content length, we need to 
 			// receive more
