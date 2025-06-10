@@ -22,7 +22,8 @@ SOURCES = src/main.cpp \
 			src/ConfigParser.cpp \
 			src/event_loop.cpp \
 			src/request_handler.cpp \
-			src/autoindex.cpp
+			src/autoindex.cpp \
+			src/parse_header.cpp
 			
 HEADERS = inc/Client.hpp inc/event_loop.hpp inc/request_handler.hpp
 

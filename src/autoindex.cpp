@@ -1,8 +1,9 @@
 #include "../inc/Webserv.hpp"
 
 // directory iterator available since c++17 so that is in Makefile now. Will see later.
-std::string generateAutoIndex(const std::string& request_path)
+std::string generateAutoIndex(const std::string& request_path, ServerConfig config)
 {
+    (void)config;
     const std::string root = "./www";  // We hardcoding for now, later combining with serverConfig
     std::string clean_path = request_path;
 

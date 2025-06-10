@@ -1,5 +1,6 @@
 #include "../inc/request_handler.hpp"
 #include "../inc/Webserv.hpp"
+#include "../inc/parse_header.hpp"
 
 int getPostContentLength (std::string request) {
 	std::istringstream iss(request);
@@ -55,8 +56,17 @@ bool ends_with(const std::string& str, const std::string& suffix) {
            str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-Response getResponse(std::string request, ServerConfig config) {
-	(void) config;
+static void getAutoIndex(Response *response, ServerConfig config) {
+	try {
+		response->body = generateAutoIndex(response->path, config);
+	} catch (...) {
+		createBody(response, "errors/404.html");
+	}
+	createHeader(response, "text/html; charset=UTF-8");
+}
+
+Response getResponse(std::string request, ServerConfig config, int status_code) {
+	(void) status_code;
 	Response response;
 
 	std::istringstream iss(request);
@@ -65,36 +75,27 @@ Response getResponse(std::string request, ServerConfig config) {
 	iss >> response.method >> response.path >> response.version >> d >> d >> d >> connection;
 	if (connection == "close")
 		response.connection_is_close = true;
-
-	//std::cout << request << std::endl;
-
-	std::string root = "./www"; //temporary instead of config
-
+	
+	std::string root = config.locations[0].root;
+	setStatusCode(&response, 200, "OK");
 	if (response.method == "GET") {
 		if (response.path == "/") {
-			setStatusCode(&response, 200, "OK");
 			createBody(&response, root + "/index.html");
 			createHeader(&response, "text/html; charset=UTF-8");
-			response.full_response = response.header + response.body;
-			return response;
+		}
+		else if (response.path == "/images") { //Needs to look for all directories
+			getAutoIndex(&response, config);
 		}
 		else {
 			createBody(&response, root + response.path);
-		}
-		if (ends_with(response.path, ".png")){
-			
-			createHeader(&response, "image/png");
-		}
-		else if (ends_with(response.path, ".jpg")){
-			createHeader(&response, "image/jpeg");
+			if (ends_with(response.path, ".png")){
+				createHeader(&response, "image/png");
+			}
+			else if (ends_with(response.path, ".jpg")){
+				createHeader(&response, "image/jpeg");
+			}
 		}
 	}
-	// response.body = generateAutoIndex("images/");
-	// response.header = "HTTP/1.1 200 OK\r\n"
-	// "Content-Type: text/html; charset=UTF-8\r\n"
-	// "Content-Length: " + std::to_string(response.body.length()) + "\r\n"
-	// "Connection: close\r\n"
-	// + "\r\n";
 	response.full_response = response.header + response.body;
 	return response;
 }

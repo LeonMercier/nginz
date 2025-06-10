@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <map>
 
 struct Response {
 	int			status_code = 200;
@@ -22,4 +23,12 @@ struct Response {
 };
 
 int getPostContentLength (std::string request);
-Response getResponse(std::string request, ServerConfig config);
+Response getResponse(std::string request, ServerConfig config, int status_code);
+
+const std::map<std::string, std::string> extensions {
+	{".gif", "image/gif"},
+	{".html", "text/html"},
+	{".jpeg", "image/jpeg"},
+	{".jpg", "image/jpeg"},
+	{".png", "image/png"}
+};
