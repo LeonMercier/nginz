@@ -11,6 +11,9 @@ Client::Client(std::vector<ServerConfig> configs, int epoll_fd, int fd) :
 t_client_state Client::getState() {
 	return state;
 }
+void Client::setState(t_client_state state) {
+	this->state = state;
+}
 
 
 bool isCompleteHeader(std::string request) {
@@ -48,23 +51,22 @@ void Client::closeConnection(int epoll_fd, int client_fd) {
 // TODO: 413 => disconnect?
 void Client::handleCompleteRequest(
 	ServerConfig config, 
-	std::map<std::string, std::string> header_map,
 	size_t header_end,
 	size_t body_length,
 	int status)
 {
-	std::cout << "##### RECEIVED REQUEST #####" << std::endl;
-	std::cout << recv_buf.substr(0, header_end + body_length)<< std::endl;
-	std::cout << "############################" << std::endl;
+	// std::cout << "##### RECEIVED REQUEST #####" << std::endl;
+	// std::cout << recv_buf.substr(0, header_end + body_length)<< std::endl;
+	// std::cout << "############################" << std::endl;
 	
 	// TODO: sometimes the connection is closed without sending anything
 	// back? So we cannot always toggle to EPOLLOUT?
 	 
-	std::string whole_req = recv_buf.substr(0, header_end + body_length);
-	recv_buf.erase(0, header_end + body_length);
-	struct Response response = getResponse(whole_req, config, status);
-	t_resp resp = {header_map, response};
-	send_queue.push_back(resp);
+	std::string whole_req = cur_request.raw_request.substr(
+		0, header_end + body_length);
+	cur_request.raw_request.erase(0, header_end + body_length);
+	cur_request.response = getResponse(whole_req, config, status);
+	send_queue.push_back(cur_request);
 	
 	// this will cause the event loop to trigger sendTo()
 	changeEpollMode(epoll_fd, fd, EPOLLOUT);
@@ -72,34 +74,35 @@ void Client::handleCompleteRequest(
 
 void Client::handlePost(
 	ServerConfig config,
-	std::map<std::string, std::string> &header_map,
 	size_t header_end)
 {
-	std::cout << "HANDLE POST" << std::endl;
 	// if there is transfer-encoding, then content-length can be ignored
-	if (header_map.find("transfer-encoding") != header_map.end()) {
-		std::cout << "yass" << header_map.at("transfer-encoding") << std::endl;
-		if (header_map.at("transfer-encoding") == "chunked") {
+	if (cur_request.header.find("transfer-encoding") != cur_request.header.end()) {
+		if (cur_request.header.at("transfer-encoding") == "chunked\r") {
 			std::cout << "receiving chunked transfer" << std::endl;
+			// TODO: we may already have received everything here
+			setState(RECV_CHUNKED);
 		}
-	} else if (header_map.find("Content-Length") == header_map.end()) {
-		handleCompleteRequest(config, header_map, header_end, 0, 411);
+	} else if (cur_request.header.find("Content-Length") == cur_request.header.end()) {
+		handleCompleteRequest(config, header_end, 0, 411);
 	} else {
 		size_t content_length = 0;
 		try {
-			content_length = std::stoul(header_map.at("Content-Length"));
+			content_length = std::stoul(cur_request.header.at("Content-Length"));
 		} catch (...) {
-			std::cerr << "Client::handlePost(): failed to find Content-Length" << std::endl;
+			std::cerr << "Client::handlePost(): failed to find Content-Length";
+			std::cerr << std::endl;
 		}
 		if (config.client_max_body_size != 0
 			&& content_length > config.client_max_body_size) {
 			std::cerr << "Client body length larger than allowed" << std::endl;
-			handleCompleteRequest(config, header_map, header_end, 0, 413);
+			handleCompleteRequest(config, header_end, 0, 413);
 			// TODO: do we want to continue receiving?
-		} else if (recv_buf.length() >= header_end + content_length) {
-			std::cout << "Buf: " << recv_buf.length() << " target: "\
-				<< header_end << " + " << content_length << std::endl;
-			handleCompleteRequest(config, header_map, header_end, content_length, 200);
+		} else if (cur_request.raw_request.length() >= header_end + content_length) {
+			std::cout << "Buf: " << cur_request.raw_request.length();
+			std::cout << " target: " << header_end << " + " << content_length;
+			std::cout << std::endl;
+			handleCompleteRequest(config, header_end, content_length, 0);
 		}
 		// if recv_buf is smaller than header + content length, we need to 
 		// receive more => we hall out of this function without doing anything
@@ -117,7 +120,6 @@ void Client::recvFrom() {
 
 	int bytes_read = recv(fd, buf, sizeof(buf) -1, MSG_DONTWAIT);
 	// std::cout << "partial receive" << std::endl;
-	std::cout << recv_buf << std::endl;
 
 	if (bytes_read < 0) {
 		// TODO: currently not throwing here because maybe this is not a 
@@ -133,16 +135,20 @@ void Client::recvFrom() {
 		return ;
 	}
 
-	recv_buf += std::string(buf, bytes_read);
+	std::cout << std::string(buf, bytes_read) << std::endl;
+	std::cout << "###" << std::endl;
+
+	cur_request.raw_request += std::string(buf, bytes_read);
+
 	std::cout << "recvFrom: read " << bytes_read << " bytes" << std::endl;
-	if (isCompleteHeader(recv_buf)) {
+	if (isCompleteHeader(cur_request.raw_request)) {
 		// t_method method = getRequestMethod(recv_buf);
 		size_t header_end =
-			recv_buf.find(header_terminator) + header_terminator.length();
+			cur_request.raw_request.find(header_terminator) + header_terminator.length();
 
-		std::map<std::string, std::string> header_map =
-			parseHeader(recv_buf.substr(0, header_end));
-		if (header_map.find("Host") == header_map.end()) {
+		cur_request.header =
+			parseHeader(cur_request.raw_request.substr(0, header_end));
+		if (cur_request.header.find("Host") == cur_request.header.end()) {
 			std::cerr << "Client::recvFrom(): no host field" << std::endl;
 			// TODO : end of chunked transfer looks like end of header,
 			// therefore no host field
@@ -155,7 +161,7 @@ void Client::recvFrom() {
 		// in case there is no match, uses the first config
 		ServerConfig config = configs.front();
 		// at this point all the configs we have have identical host+port
-		if (header_map.find("Host") != header_map.end()) {
+		if (cur_request.header.find("Host") != cur_request.header.end()) {
 			for (auto it = configs.begin(); it != configs.end(); it++) {
 				// select first config where header host field matches 
 				// servername
@@ -163,7 +169,7 @@ void Client::recvFrom() {
 				// TODO: pick first match instead of last
 				for (auto itt = it->server_names.begin();
 					itt != it->server_names.end(); itt++) {
-					if (header_map.at("Host") == *itt) {
+					if (cur_request.header.at("Host") == *itt) {
 						config = *it;
 						break ;
 					}
@@ -172,11 +178,11 @@ void Client::recvFrom() {
 		}
 
 		// TODO: .at() will throw if key is not found => catch => invalid request
-		if (header_map.at("method") == "GET") {
-			handleCompleteRequest(config, header_map, header_end, 0, 200);
+		if (cur_request.header.at("method") == "GET") {
+			handleCompleteRequest(config, header_end, 0, 0);
 
-		} else if (header_map.at("method") == "POST") {
-			handlePost(config, header_map, header_end);
+		} else if (cur_request.header.at("method") == "POST") {
+			handlePost(config, header_end);
 		}
 	}
 }
@@ -206,7 +212,7 @@ void Client::sendTo() {
 
 	std::string conn_type = "keep-alive";
 	try { //TODO: lowercase connection?
-		conn_type = send_queue.front().req_header.at("Connection");
+		conn_type = send_queue.front().header.at("Connection");
 	} catch (...) {
 		std::cerr << "Client::sendTo(): no Connection field in header" << std::endl;
 	}
