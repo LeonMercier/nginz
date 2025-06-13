@@ -15,10 +15,18 @@ std::map<std::string, std::string> parseHeader(std::string request) {
 	while (getline(iss, temp)) {
 		if (temp.find(delimiter) != std::string::npos) {
 			pos = temp.find(delimiter);
+
 			subA = temp.substr(0, pos);
+			std::transform(subA.begin(), subA.end(), subA.begin(),[](unsigned char c) {
+				return std::tolower(c);
+			});
+
 			subB = temp.substr(pos + 1);
 			subB = std::regex_replace(subB, std::regex("^ +| +$"), ""); //Trim Whitespace
-			
+
+			auto remove_value = remove(subB.begin(), subB.end(), '\r');
+			subB.erase(remove_value, subB.end());
+
 			auto return_value = result.insert(std::pair<std::string, std::string>(subA, subB));
 			if (!return_value.second) {
 				std::map<std::string, std::string> empty;
@@ -26,7 +34,6 @@ std::map<std::string, std::string> parseHeader(std::string request) {
 			}
 		}
 	}
-
 	// for (auto& p : result) {
 	// 	std::cout << ">>>" << p.first << " -- " << p.second << std::endl;
 	// }
