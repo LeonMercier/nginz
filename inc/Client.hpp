@@ -13,6 +13,7 @@ typedef struct s_resp {
 
 typedef enum e_client_state {
 	IDLE,
+	RECV_CHUNKED,
 	DISCONNECT,
 	CLIENT_ERROR
 } t_client_state;

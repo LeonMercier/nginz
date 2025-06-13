@@ -43,7 +43,6 @@ void Client::closeConnection(int epoll_fd, int client_fd) {
 	state = DISCONNECT;
 }
 
-// TODO: suppor request pipelining
 // TODO: 408: timeout
 // TODO: 411 => disconnect?
 // TODO: 413 => disconnect?
@@ -67,8 +66,6 @@ void Client::handleCompleteRequest(
 	t_resp resp = {header_map, response};
 	send_queue.push_back(resp);
 	
-	// not emptying recv_buf here will allow pipelining?
-	// recv_buf = "";
 	// this will cause the event loop to trigger sendTo()
 	changeEpollMode(epoll_fd, fd, EPOLLOUT);
 }
@@ -78,12 +75,22 @@ void Client::handlePost(
 	std::map<std::string, std::string> &header_map,
 	size_t header_end)
 {
-	// TODO: would it be ok to try to receive everything and then
-	// later check if POST is even allowed
-	if (header_map.find("Content-Length") == header_map.end()) {
+	std::cout << "HANDLE POST" << std::endl;
+	// if there is transfer-encoding, then content-length can be ignored
+	if (header_map.find("transfer-encoding") != header_map.end()) {
+		std::cout << "yass" << header_map.at("transfer-encoding") << std::endl;
+		if (header_map.at("transfer-encoding") == "chunked") {
+			std::cout << "receiving chunked transfer" << std::endl;
+		}
+	} else if (header_map.find("Content-Length") == header_map.end()) {
 		handleCompleteRequest(config, header_map, header_end, 0, 411);
 	} else {
-		size_t content_length = std::stoul(header_map.at("Content-Length"));
+		size_t content_length = 0;
+		try {
+			content_length = std::stoul(header_map.at("Content-Length"));
+		} catch (...) {
+			std::cerr << "Client::handlePost(): failed to find Content-Length" << std::endl;
+		}
 		if (config.client_max_body_size != 0
 			&& content_length > config.client_max_body_size) {
 			std::cerr << "Client body length larger than allowed" << std::endl;
@@ -105,12 +112,12 @@ void Client::handlePost(
 void Client::recvFrom() {
 	// sleep(1);
 	//std::cout << "entered recvFrom" << std::endl;
-	char buf[20] = {0};
+	char buf[2000] = {0};
 	std::string header_terminator = "\r\n\r\n";
 
 	int bytes_read = recv(fd, buf, sizeof(buf) -1, MSG_DONTWAIT);
 	// std::cout << "partial receive" << std::endl;
-	// std::cout << recv_buf << std::endl;
+	std::cout << recv_buf << std::endl;
 
 	if (bytes_read < 0) {
 		// TODO: currently not throwing here because maybe this is not a 
@@ -135,6 +142,11 @@ void Client::recvFrom() {
 
 		std::map<std::string, std::string> header_map =
 			parseHeader(recv_buf.substr(0, header_end));
+		if (header_map.find("Host") == header_map.end()) {
+			std::cerr << "Client::recvFrom(): no host field" << std::endl;
+			// TODO : end of chunked transfer looks like end of header,
+			// therefore no host field
+		}
 
 		// According to subject, the first server in the config for a 
 		// particular host:port will be the default that is used for 
