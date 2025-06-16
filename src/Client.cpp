@@ -83,12 +83,12 @@ void Client::handlePost(
 			// TODO: we may already have received everything here
 			setState(RECV_CHUNKED);
 		}
-	} else if (cur_request.header.find("Content-Length") == cur_request.header.end()) {
+	} else if (cur_request.header.find("content-length") == cur_request.header.end()) {
 		handleCompleteRequest(config, header_end, 0, 411);
 	} else {
 		size_t content_length = 0;
 		try {
-			content_length = std::stoul(cur_request.header.at("Content-Length"));
+			content_length = std::stoul(cur_request.header.at("content-length"));
 		} catch (...) {
 			std::cerr << "Client::handlePost(): failed to find Content-Length";
 			std::cerr << std::endl;
@@ -117,6 +117,7 @@ void Client::recvFrom() {
 	char buf[2000] = {0};
 	std::string header_terminator = "\r\n\r\n";
 
+	// TODO:: -1 really needed?
 	int bytes_read = recv(fd, buf, sizeof(buf) -1, MSG_DONTWAIT);
 	// std::cout << "partial receive" << std::endl;
 
