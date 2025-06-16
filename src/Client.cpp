@@ -113,7 +113,6 @@ void Client::handlePost(
 // A client can have multiple configs, but request can only match one config
 // TODO: incomplete header -> timeout
 void Client::recvFrom() {
-	// sleep(1);
 	//std::cout << "entered recvFrom" << std::endl;
 	char buf[2000] = {0};
 	std::string header_terminator = "\r\n\r\n";
