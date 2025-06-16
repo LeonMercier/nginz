@@ -210,7 +210,7 @@ void Client::sendTo() {
 	to_send.erase(0, bytes_sent);
 
 	std::string conn_type = "keep-alive";
-	try { //TODO: lowercase connection?
+	try {
 		conn_type = send_queue.front().header.at("connection");
 	} catch (...) {
 		std::cerr << "Client::sendTo(): no Connection field in header" << std::endl;
