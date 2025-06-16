@@ -102,7 +102,7 @@ void Client::handlePost(
 			std::cout << "Buf: " << cur_request.raw_request.length();
 			std::cout << " target: " << header_end << " + " << content_length;
 			std::cout << std::endl;
-			handleCompleteRequest(config, header_end, content_length, 0);
+			handleCompleteRequest(config, header_end, content_length, 200);
 		}
 		// if recv_buf is smaller than header + content length, we need to 
 		// receive more => we hall out of this function without doing anything
@@ -147,7 +147,7 @@ void Client::recvFrom() {
 
 		cur_request.header =
 			parseHeader(cur_request.raw_request.substr(0, header_end));
-		if (cur_request.header.find("Host") == cur_request.header.end()) {
+		if (cur_request.header.find("host") == cur_request.header.end()) {
 			std::cerr << "Client::recvFrom(): no host field" << std::endl;
 			// TODO : end of chunked transfer looks like end of header,
 			// therefore no host field
@@ -160,7 +160,7 @@ void Client::recvFrom() {
 		// in case there is no match, uses the first config
 		ServerConfig config = configs.front();
 		// at this point all the configs we have have identical host+port
-		if (cur_request.header.find("Host") != cur_request.header.end()) {
+		if (cur_request.header.find("host") != cur_request.header.end()) {
 			for (auto it = configs.begin(); it != configs.end(); it++) {
 				// select first config where header host field matches 
 				// servername
@@ -168,7 +168,7 @@ void Client::recvFrom() {
 				// TODO: pick first match instead of last
 				for (auto itt = it->server_names.begin();
 					itt != it->server_names.end(); itt++) {
-					if (cur_request.header.at("Host") == *itt) {
+					if (cur_request.header.at("host") == *itt) {
 						config = *it;
 						break ;
 					}
@@ -178,7 +178,7 @@ void Client::recvFrom() {
 
 		// TODO: .at() will throw if key is not found => catch => invalid request
 		if (cur_request.header.at("method") == "GET") {
-			handleCompleteRequest(config, header_end, 0, 0);
+			handleCompleteRequest(config, header_end, 0, 200);
 
 		} else if (cur_request.header.at("method") == "POST") {
 			handlePost(config, header_end);
@@ -211,7 +211,7 @@ void Client::sendTo() {
 
 	std::string conn_type = "keep-alive";
 	try { //TODO: lowercase connection?
-		conn_type = send_queue.front().header.at("Connection");
+		conn_type = send_queue.front().header.at("connection");
 	} catch (...) {
 		std::cerr << "Client::sendTo(): no Connection field in header" << std::endl;
 	}
