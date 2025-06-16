@@ -18,6 +18,7 @@
         <input type="submit" value="Upload">
     </form>
 
+	<!-- Form with POST request -->
     <h2>Submit a form</h2>
 	<form action="/submit" method="post">
 	  <label for="name">Name:</label>
@@ -27,6 +28,13 @@
 	  <input type="email" id="email" name="email" required>
 	  
 	  <input type="submit" value="Submit">
+	</form>
+
+	<!-- Form with GET request -->
+    <h2>Search for something</h2>
+	<form method="get" action="/search">
+    	<input type="search" name="location" placeholder="Search.." />
+    	<input type="submit" value="Go" />
 	</form>
 
 </body>
