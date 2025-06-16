@@ -8,64 +8,64 @@
 #include "../inc/Structs.hpp"
 #include "../inc/StandardLibraries.hpp"
 
-void printServerConfigs(const std::vector<ServerConfig> &servers)
-{
-	for (size_t i = 0; i < servers.size(); ++i)
-	{
-		const ServerConfig &server = servers[i];
-		std::cout << "======== SERVER " << i + 1 << " ========" << std::endl;
+// void printServerConfigs(const std::vector<ServerConfig> &servers)
+// {
+// 	for (size_t i = 0; i < servers.size(); ++i)
+// 	{
+// 		const ServerConfig &server = servers[i];
+// 		std::cout << "======== SERVER " << i + 1 << " ========" << std::endl;
 
-	//	Server names
-		std::cout << "Server Names: ";
-		for (size_t j = 0; j < server.server_names.size(); ++j)
-		{
-			std::cout << server.server_names[j];
-			if (j + 1 < server.server_names.size())
-				std::cout << ", ";
-		}
-		std::cout << std::endl;
+// 	//	Server names
+// 		std::cout << "Server Names: ";
+// 		for (size_t j = 0; j < server.server_names.size(); ++j)
+// 		{
+// 			std::cout << server.server_names[j];
+// 			if (j + 1 < server.server_names.size())
+// 				std::cout << ", ";
+// 		}
+// 		std::cout << std::endl;
 
-//		Listen IP/Port
-		std::cout << "Listen IP: " << server.listen_ip << std::endl;
-		std::cout << "Listen Port: " << server.listen_port << std::endl;
+// //		Listen IP/Port
+// 		std::cout << "Listen IP: " << server.listen_ip << std::endl;
+// 		std::cout << "Listen Port: " << server.listen_port << std::endl;
 
-//		Error pages
-		std::cout << "Error Pages:" << std::endl;
-		for (std::map<int, std::string>::const_iterator it = server.error_pages.begin(); it != server.error_pages.end(); ++it)
-		{
-			std::cout << "  " << it->first << " => " << it->second << std::endl;
-		}
+// //		Error pages
+// 		std::cout << "Error Pages:" << std::endl;
+// 		for (std::map<int, std::string>::const_iterator it = server.error_pages.begin(); it != server.error_pages.end(); ++it)
+// 		{
+// 			std::cout << "  " << it->first << " => " << it->second << std::endl;
+// 		}
 
-//		Client max body size
-		std::cout << "Client Max Body Size: " << server.client_max_body_size << std::endl;
+// //		Client max body size
+// 		std::cout << "Client Max Body Size: " << server.client_max_body_size << std::endl;
 
-	//	Locations
-		std::cout << "Locations: " << std::endl;
-		for (size_t k = 0; k < server.locations.size(); ++k)
-		{
-			const LocationConfig &loc = server.locations[k];
-			std::cout << "  --- Location " << k + 1 << " ---" << std::endl;
-			std::cout << "  Path: " << loc.path << std::endl;
-			std::cout << "  Root: " << loc.root << std::endl;
-			std::cout << "  Index: " << loc.index << std::endl;
-			std::cout << "  Methods: ";
-			for (size_t m = 0; m < loc.methods.size(); ++m)
-			{
-				std::cout << loc.methods[m];
-				if (m + 1 < loc.methods.size())
-					std::cout << ", ";
-			}
-			std::cout << std::endl;
-			std::cout << "  Autoindex: " << (loc.autoindex ? "on" : "off") << std::endl;
-			std::cout << "  Upload Store: " << loc.upload_store << std::endl;
-			if (loc.return_code != 0 || !loc.return_url.empty())
-			{
-				std::cout << "  Return: " << loc.return_code << " " << loc.return_url << std::endl;
-			}
-		}
-		std::cout << std::endl;
-	}
-}
+// 	//	Locations
+// 		std::cout << "Locations: " << std::endl;
+// 		for (size_t k = 0; k < server.locations.size(); ++k)
+// 		{
+// 			const LocationConfig &loc = server.locations[k];
+// 			std::cout << "  --- Location " << k + 1 << " ---" << std::endl;
+// 			std::cout << "  Path: " << loc.path << std::endl;
+// 			std::cout << "  Root: " << loc.root << std::endl;
+// 			std::cout << "  Index: " << loc.index << std::endl;
+// 			std::cout << "  Methods: ";
+// 			for (size_t m = 0; m < loc.methods.size(); ++m)
+// 			{
+// 				std::cout << loc.methods[m];
+// 				if (m + 1 < loc.methods.size())
+// 					std::cout << ", ";
+// 			}
+// 			std::cout << std::endl;
+// 			std::cout << "  Autoindex: " << (loc.autoindex ? "on" : "off") << std::endl;
+// 			std::cout << "  Upload Store: " << loc.upload_store << std::endl;
+// 			if (loc.return_code != 0 || !loc.return_url.empty())
+// 			{
+// 				std::cout << "  Return: " << loc.return_code << " " << loc.return_url << std::endl;
+// 			}
+// 		}
+// 		std::cout << std::endl;
+// 	}
+// }
 
 std::string	trimComments(const std::string &line)
 {
@@ -612,7 +612,7 @@ std::vector<ServerConfig> configParser(char *path_to_config)
 	{
 		throw std::runtime_error("config file: no valid server information configured");
 	}
-	std::cout << "PRINTING SERVERS\n";
-	printServerConfigs(servers);
+	// std::cout << "PRINTING SERVERS\n";
+	// printServerConfigs(servers);
 	return servers;
 }
