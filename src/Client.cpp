@@ -92,7 +92,7 @@ void Client::handlePost(
 		} else if (recv_buf.length() >= header_end + content_length) {
 			std::cout << "Buf: " << recv_buf.length() << " target: "\
 				<< header_end << " + " << content_length << std::endl;
-			handleCompleteRequest(config, header_map, header_end, content_length, 0);
+			handleCompleteRequest(config, header_map, header_end, content_length, 200);
 		}
 		// if recv_buf is smaller than header + content length, we need to 
 		// receive more => we hall out of this function without doing anything
@@ -143,23 +143,25 @@ void Client::recvFrom() {
 		// in case there is no match, uses the first config
 		ServerConfig config = configs.front();
 		// at this point all the configs we have have identical host+port
-		for (auto it = configs.begin(); it != configs.end(); it++) {
-			// select first config where header host field matches 
-			// servername
-			// TODO: have this in a try in case map::at() fails
-			// TODO: pick first match instead of last
-			for (auto itt = it->server_names.begin();
-				itt != it->server_names.end(); itt++) {
-				if (header_map.at("Host") == *itt) {
-					config = *it;
-					break ;
+		if (header_map.find("Host") != header_map.end()) {
+			for (auto it = configs.begin(); it != configs.end(); it++) {
+				// select first config where header host field matches 
+				// servername
+				// TODO: have this in a try in case map::at() fails
+				// TODO: pick first match instead of last
+				for (auto itt = it->server_names.begin();
+					itt != it->server_names.end(); itt++) {
+					if (header_map.at("Host") == *itt) {
+						config = *it;
+						break ;
+					}
 				}
 			}
 		}
 
 		// TODO: .at() will throw if key is not found => catch => invalid request
 		if (header_map.at("method") == "GET") {
-			handleCompleteRequest(config, header_map, header_end, 0, 0);
+			handleCompleteRequest(config, header_map, header_end, 0, 200);
 
 		} else if (header_map.at("method") == "POST") {
 			handlePost(config, header_map, header_end);
