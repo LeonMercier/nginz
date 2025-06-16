@@ -11,6 +11,7 @@
 #include <iostream>
 #include <map>
 #include <netinet/in.h>
+#include <regex>
 #include <sstream> // for istrinstream
 #include <stdexcept>
 #include <string>

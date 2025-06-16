@@ -8,10 +8,10 @@ struct LocationConfig
 	std::string	root;
 	std::string	index;
 	std::vector<std::string> methods;
-	bool		autoindex;
+	bool		autoindex = false;
 	std::string	upload_store; // not sure if a good name
-	int			return_code;
-	std::string return_url;
+	int			return_code = 0;
+	std::string return_url = "";
 	// stuff for the cgi later cause no idea yet
 };
 
@@ -21,7 +21,7 @@ struct ServerConfig
 	std::string listen_ip;
 	int			listen_port;
 	std::map<int, std::string> error_pages;
-	size_t		client_max_body_size;
+	size_t		client_max_body_size = 1000000;
 	std::vector<LocationConfig> locations;
 };
 
