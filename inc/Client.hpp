@@ -5,14 +5,16 @@
 #include "../inc/parse_header.hpp"
 #include "../inc/request_handler.hpp"
 
-typedef struct s_resp {
-	std::map<std::string, std::string>	req_header;
+typedef struct s_request {
+	std::string							raw_request;
+	std::map<std::string, std::string>	header;
 	Response							response;
-} t_resp;
+} t_request;
 	
 
 typedef enum e_client_state {
 	IDLE,
+	RECV_CHUNKED,
 	DISCONNECT,
 	CLIENT_ERROR
 } t_client_state;
@@ -26,14 +28,13 @@ public:
 	void recvFrom();
 	void sendTo();
 	t_client_state getState();
+	void setState(t_client_state state);
 	void handlePost(
 		ServerConfig config,
-		std::map<std::string, std::string> &header_map,
 		size_t header_end);
 
 	void handleCompleteRequest(
 		ServerConfig config,
-		std::map<std::string, std::string> header_map,
 		size_t header_end,
 		size_t body_length,
 		int status);
@@ -45,10 +46,11 @@ private:
 	int				epoll_fd;
 	int				fd;
 	t_client_state	state;
-	std::string		recv_buf;
+	// std::string		recv_buf;
+	t_request		cur_request;
 	// std::string		send_buf;
 	// std::vector<std::string> recv_queue;
-	std::vector<t_resp> send_queue;
+	std::vector<t_request> send_queue;
 };
 
 typedef enum e_method {
