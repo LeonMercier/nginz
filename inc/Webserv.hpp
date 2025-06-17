@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Structs.hpp"
+#include "StandardLibraries.hpp"
 
 /**********************************************************************
  * Returns an HTML string presenting directory listing for directory,
