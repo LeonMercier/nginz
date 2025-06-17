@@ -15,7 +15,7 @@ REMAKE			= echo "💡 $(GREEN)Successfully rebuilt everything!$(RESET)"
 WEBSERV			= echo "🔗 $(YELLOW)Linking webserv...$(RESET)"
 
 NAME = webserv
-CPPFLAGS = -std=c++17 -Wall -Werror -Wextra
+CPPFLAGS = -std=c++17 #-Wall -Werror -Wextra -g
 CPP = c++
 SOURCES = src/main.cpp \
 			src/Client.cpp \
@@ -23,9 +23,11 @@ SOURCES = src/main.cpp \
 			src/event_loop.cpp \
 			src/request_handler.cpp \
 			src/autoindex.cpp \
-			src/parse_header.cpp
+			src/parse_header.cpp \
+			src/Request.cpp
 			
-HEADERS = inc/Client.hpp inc/event_loop.hpp inc/request_handler.hpp
+HEADERS = inc/Client.hpp inc/event_loop.hpp inc/request_handler.hpp \
+		  inc/Request.hpp
 
 SRCDIR = src
 OBJDIR = obj
