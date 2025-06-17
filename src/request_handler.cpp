@@ -190,6 +190,44 @@ static void handleGet(Response *response, ServerConfig config) {
 // 	response->root = root;
 // }
 
+
+// responses rooot and path will be saved in validation/get_root function, so there is no use for config
+
+void	handleDelete(Response &response)
+{
+	std::string	full_path;
+
+	// full_path = response.location.root + response.location.path;
+	full_path = "./www/images/directory/example.txt"; // now hardcoded, later the version above.
+
+	std::cout << "path: " << response.path << "\nroot: " << response.root << std::endl;
+	try {
+		if (!std::ifstream(full_path))
+		{
+			throw std::runtime_error("Couldn't delete unexisting file: " + full_path);
+		}
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+		response.status_code = 404; // or bad request?
+		return ;
+	}
+	try{
+		std::filesystem::remove_all(full_path); // remove_all removes even directories with files
+		if (std::ifstream(full_path))
+		{
+			throw std::runtime_error("Couldn't delete the file " + full_path);
+		}
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+		response.status_code = 500;
+	}
+	std::cout << "Deleted the file: " + full_path << std::endl;
+}
+
 Response getResponse(std::string request, ServerConfig config, int status_code) {
 	//status_code = 200; //COMMENT OUT
 	Response response;
@@ -205,6 +243,10 @@ Response getResponse(std::string request, ServerConfig config, int status_code) 
 		handleError(&response, config, status_code);
 	else if (response.method == "GET")
 		handleGet(&response, config);
+	else if (response.method == "DELETE")
+		handleDelete(response);
+	// else if (response.method == "POST") // check what are the possible statuscodes for post request. If the client is stupid (bad post request), throw something and Leon is catching. 
+		// 	handlePost(response, config);
 	response.full_response = response.header + response.body;
 	return response;
 }
