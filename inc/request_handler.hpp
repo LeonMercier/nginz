@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Structs.hpp"
 #include <string>
 #include <ctime>
