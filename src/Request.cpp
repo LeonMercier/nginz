@@ -96,7 +96,8 @@ e_req_state Request::handlePost(size_t header_end) {
 
 	// if there is transfer-encoding, then content-length can be ignored
 	if (_headers.find("transfer-encoding") != _headers.end()) {
-		if (_headers.at("transfer-encoding") == "chunked\r") {
+		if (_headers.at("transfer-encoding") == "chunked") {
+
 			std::cout << "receiving chunked transfer" << std::endl;
 			// TODO: implement checks for chunked transfer xD
 			return RECV_MORE;
@@ -131,7 +132,6 @@ e_req_state Request::handlePost(size_t header_end) {
 		handleCompleteRequest(413);
 		return READY;
 	}
-
 	// happy path
 	if (_raw_request.length() >= header_end + content_length) {
 		handleCompleteRequest(200);
