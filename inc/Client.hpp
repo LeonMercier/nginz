@@ -42,11 +42,3 @@ private:
 	std::vector<t_rsp>			send_queue;
 	Request 					request;
 };
-
-typedef enum e_method {
-	GET,
-	POST,
-	DELETE,
-	ERROR
-}	t_method;
-

@@ -47,38 +47,37 @@ void	Request::setConfig() {
 	// particular host:port will be the default that is used for 
 	// requests that dont have server names match
 
+	// at this point all the configs we have have identical host+port
+	
 	// in case there is no match, uses the first config
 	config = all_configs.front();
 
-	// at this point all the configs we have have identical host+port
-	if (headers.find("host") != headers.end()) {
-		for (auto it = all_configs.begin(); it != all_configs.end(); it++) {
-			// select first config where header host field matches 
-			// servername
-			// TODO: pick first match instead of last
-			for (auto itt = it->server_names.begin();
-				itt != it->server_names.end(); itt++) {
-				if (headers.at("host") == *itt) {
-					config = *it;
-					break ;
-				}
+	if (headers.find("host") == headers.end()) {
+		std::cerr << "Request::setConfig(): no host field in header" << std::endl;
+		return ;
+	}
+
+	for (auto it = all_configs.begin(); it != all_configs.end(); it++) {
+		// select first config where header host field matches 
+		// servername
+		for (auto itt = it->server_names.begin();
+			itt != it->server_names.end(); itt++) {
+			if (headers.at("host") == *itt) {
+				config = *it;
+				return ;
 			}
 		}
-	} else {
-		std::cerr << "Request::setConfig(): no host field in header" << std::endl;
 	}
 }
 
 void Request::handleCompleteRequest(
-	size_t header_end,size_t body_length, int status)
+	size_t body_start,size_t body_length, int status)
 {
 	// this may be unnecessary since we do not support pipelining
-	std::string whole_req = raw_request.substr(0, header_end + body_length);
-	raw_request.erase(0, header_end + body_length);
+	std::string whole_req = raw_request.substr(0, body_start + body_length);
+	raw_request.erase(0, body_start + body_length);
 
-	// std::cout << "whole_req:" << whole_req << std::endl;
 	response = getResponse(whole_req, config, status);
-	// std::cout << "RESPONSE" << response.full_response;
 }
 
 e_req_state Request::handlePost(size_t header_end) {
@@ -149,4 +148,3 @@ ServerConfig	Request::getConfig() {
 std::map<std::string, std::string>	Request::getHeaders() {
 	return headers;
 }
-

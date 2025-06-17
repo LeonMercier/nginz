@@ -17,15 +17,15 @@ public:
 	// This gets called from Client when we receive new data. It then returns:
 	//
 	// READY: we have received a complete request and the response struct is 
-	// complete and accessible by getRes(). The Client will thensend the response
-	// and destroy the current instance of Request.
+	// complete and accessible by getRes(). The Client will then send the
+	// response and destroy the current instance of Request.
 	//
 	// RECV_MORE: we still need to receive more data before forming a response.
 	// The Client will attempt to receive more data end the call this function 
 	// again.
 	e_req_state							addToRequest(std::string part);
 
-	// sets the config member to the one from all_configs that matches
+	// sets config to the one from all_configs that matches
 	// the request host field
 	void								setConfig();
 
