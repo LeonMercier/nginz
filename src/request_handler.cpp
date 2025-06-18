@@ -119,6 +119,35 @@ static void createBody(Response &response, ServerConfig config, std::string file
 	response.body = sbody.str();
 }
 
+static void handleDelete(Response &response, ServerConfig config)
+{
+	std::string	full_path;
+
+	// full_path = response.location.root + response.path;
+	full_path = "./www/images/directory/example.txt"; // now hardcoded, later the version above.
+
+	std::cout << "path: " << response.path << "\nroot: " << response.root << std::endl;
+	try {
+		if (!std::ifstream(full_path)) {
+			throw std::runtime_error("Couldn't delete unexisting file: " + full_path);
+		}
+	} catch (std::exception &e) {
+		std::cout << e.what() << std::endl;
+		handleError(response, config, 404);
+		return ;
+	}
+	try {
+		std::filesystem::remove_all(full_path); // remove_all removes even directories with files
+		if (std::ifstream(full_path)) {
+			throw std::runtime_error("Couldn't delete the file " + full_path);
+		}
+	} catch (std::exception &e) {
+		std::cout << e.what() << std::endl;
+		handleError(response, config, 500);
+	}
+	std::cout << "Deleted the file: " + full_path << std::endl;
+}
+
 static void handleGet(Response &response, ServerConfig config) {
 	if (response.path == "/") {
 		createBody(response, config, response.location.root + "/index.html");
@@ -175,34 +204,7 @@ static LocationConfig getLocation(std::string path, ServerConfig config) {
 	return empty_location;
 }
 
-static void handleDelete(Response &response, ServerConfig config)
-{
-	std::string	full_path;
 
-	// full_path = response.location.root + response.path;
-	full_path = "./www/images/directory/example.txt"; // now hardcoded, later the version above.
-
-	std::cout << "path: " << response.path << "\nroot: " << response.root << std::endl;
-	try {
-		if (!std::ifstream(full_path)) {
-			throw std::runtime_error("Couldn't delete unexisting file: " + full_path);
-		}
-	} catch (std::exception &e) {
-		std::cout << e.what() << std::endl;
-		handleError(response, config, 404);
-		return ;
-	}
-	try {
-		std::filesystem::remove_all(full_path); // remove_all removes even directories with files
-		if (std::ifstream(full_path)) {
-			throw std::runtime_error("Couldn't delete the file " + full_path);
-		}
-	} catch (std::exception &e) {
-		std::cout << e.what() << std::endl;
-		handleError(response, config, 500);
-	}
-	std::cout << "Deleted the file: " + full_path << std::endl;
-}
 
 Response getResponse(std::string request, ServerConfig config, int status_code) {
 	Response response;
