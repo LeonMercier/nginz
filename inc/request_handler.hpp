@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <utility> //swap
 
 struct Response {
 	int			status_code = 200;
@@ -19,6 +20,8 @@ struct Response {
 
 	std::string root = "";
 
+	LocationConfig location;
+
 	std::string body = "";
 	std::string header = "";
 	std::string full_response = "";
@@ -26,6 +29,7 @@ struct Response {
 
 Response getResponse(std::string request, ServerConfig config, int status_code);
 int getPostContentLength (std::string request);
+bool isPostAllowed(std::string path, ServerConfig config);
 
 const std::map<std::string, std::string> extensions {
 	{".gif", "image/gif"},
