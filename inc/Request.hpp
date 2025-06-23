@@ -1,15 +1,18 @@
 #pragma once
 
-#include "request_handler.hpp"
+//#include "request_handler.hpp"
 #include "parse_header.hpp"
 #include "StandardLibraries.hpp"
 #include "Structs.hpp"
 
 typedef enum {
 	RECV_MORE,
+	WAIT_CGI,
 	READY
 } e_req_state;
 
+class Request;
+Response getResponse(std::string request, ServerConfig config, int status_code, Request *req_ref);
 class Request {
 public:
 	Request(std::vector<ServerConfig> configs);
@@ -40,11 +43,13 @@ public:
 	Response							getRes();
 	ServerConfig						getConfig();
 	std::map<std::string, std::string>	getHeaders();
+	e_req_state							state;
 
 private:
 	std::vector<ServerConfig>			all_configs;
 	struct ServerConfig					config;
 	std::string							raw_request;
-	struct Response						response;
+	Response						response;
 	std::map<std::string, std::string>	headers;
+	
 };

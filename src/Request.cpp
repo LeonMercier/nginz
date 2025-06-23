@@ -19,6 +19,10 @@ e_req_state	Request::addToRequest(std::string part) {
 		// TODO: .at() will throw if key is not found => catch => invalid request
 		auto method = headers.find("method");
 
+		// if (isCgi) {
+		// 	launchCgi();
+		// }
+
 		// no method field
 		if (method == headers.end()) {
 			std::cerr << "Request::addToRequest(): no method field" << std::endl;
@@ -77,7 +81,7 @@ void Request::handleCompleteRequest(
 	std::string whole_req = raw_request.substr(0, body_start + body_length);
 	raw_request.erase(0, body_start + body_length);
 
-	response = getResponse(whole_req, config, status);
+	response = getResponse(whole_req, config, status, this);
 }
 
 e_req_state Request::handlePost(size_t header_end) {
