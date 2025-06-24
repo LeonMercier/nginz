@@ -68,6 +68,9 @@ void Client::recvFrom() {
 
 	e_req_state status = request.addToRequest(std::string(buf, bytes_read));
 	if (status == READY) {
+		//if (request.getIsCGI()) {
+		//	launchCGI();		
+		//}
 		// TODO: 408: timeout
 		// TODO: 411 => disconnect?
 		// TODO: 413 => disconnect?

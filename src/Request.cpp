@@ -22,23 +22,19 @@ e_req_state	Request::addToRequest(std::string part) {
 		// TODO: .at() will throw if key is not found => catch => invalid request
 		auto method = headers.find("method");
 
-		// if (isCgi) {
-		// 	launchCgi();
-		// }
-
 		// no method field
 		if (method == headers.end()) {
 			std::cerr << "Request::addToRequest(): no method field" << std::endl;
 			handleCompleteRequest(body_start, 0, 400);
 			return READY;
 		}
-
 		if (method->second == "GET") {
 			// std::cerr << "Request::addToRequest(): happy" << std::endl;
 			handleCompleteRequest(body_start, 0, 200);
 			return READY;
 		} else if (method->second == "POST") {
 			return handlePost(body_start);
+
 		} else {
 			std::cerr << "Request::addToRequest(): unknown method" << std::endl;
 			handleCompleteRequest(body_start, 0, 400);
@@ -81,10 +77,10 @@ void Request::handleCompleteRequest(
 	size_t body_start,size_t body_length, int status)
 {
 	// this may be unnecessary since we do not support pipelining
-	std::string whole_req = raw_request.substr(0, body_start + body_length);
-	raw_request.erase(0, body_start + body_length);
+	//std::string whole_req = raw_request.substr(0, body_start + body_length);
+	//raw_request.erase(0, body_start + body_length);
 
-	getResponse(whole_req, status);
+	getResponse(status);
 }
 
 e_req_state Request::handlePost(size_t header_end) {
@@ -154,6 +150,10 @@ ServerConfig	Request::getConfig() {
 
 std::map<std::string, std::string>	Request::getHeaders() {
 	return headers;
+}
+
+bool			Request::getIsCgi() {
+	return is_cgi;
 }
 
 // #include "../inc/request_handler.hpp"
@@ -370,10 +370,10 @@ static int	validateRequest(std::map<std::string, std::string> header, Response &
 	return 0;
 }
 
-void Request::getResponse(std::string request, int status_code) {
-	//std::cout << "getResponse" << raw_request << std::endl;
-	//Response response;
-	std::istringstream iss(request);
+void Request::getResponse(int status_code) {
+	//  std::cout << "getResponse" << raw_request << std::endl;
+	//  Response response;
+	std::istringstream iss(raw_request);
 	iss >> response.method >> response.path >> response.version;
 	//std::cout << response.method << std::endl;
 
@@ -382,16 +382,13 @@ void Request::getResponse(std::string request, int status_code) {
 	// std::cout << ">>>" << "Path: " << response.path << std::endl;
 	// std::cout << ">>>" << "Location: " << response.location.path << std::endl;
 
-	// parseHeader(request);
 	// if (status_code == 200) {
 	// 	status_code = validateRequest(getHeaders(), response, config);
 	// }
 
 	// if request looks like CGI
-	//ref_req.client.cgi.launchCgi();
-	// set client.cgi_pid to the pid of the process
-	// set to EPOLLOUT
-	//state = WAIT_CGI;
+	// set cgi_pid to the pid of the process
+	// state = WAIT_CGI;
 
 	
 
@@ -402,5 +399,5 @@ void Request::getResponse(std::string request, int status_code) {
 	else if (response.method == "DELETE")
 		handleDelete(response, config);
 	response.full_response = response.header + response.body;
-	//return response;
+	// return response;
 }

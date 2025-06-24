@@ -84,8 +84,9 @@ public:
 	Response							getRes();
 	ServerConfig						getConfig();
 	std::map<std::string, std::string>	getHeaders();
+	bool								getIsCgi();
 	e_req_state							state;
-	void getResponse(std::string request, int status_code);
+	void getResponse(int status_code);
 	int getPostContentLength (std::string request);
 	bool isPostAllowed(std::string path, ServerConfig config);
 
@@ -95,5 +96,5 @@ private:
 	std::string							raw_request;
 	Response						response;
 	std::map<std::string, std::string>	headers;
-	
+	bool								is_cgi;
 };
