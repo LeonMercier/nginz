@@ -15,7 +15,9 @@ typedef struct s_rsp {
 
 typedef enum e_client_state {
 	IDLE,
+	SEND,
 	RECV_CHUNKED,
+	WAIT_CGI,
 	DISCONNECT,
 	CLIENT_ERROR
 } t_client_state;

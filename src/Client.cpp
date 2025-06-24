@@ -68,9 +68,12 @@ void Client::recvFrom() {
 
 	e_req_state status = request.addToRequest(std::string(buf, bytes_read));
 	if (status == READY) {
-		//if (request.getIsCGI()) {
-		//	launchCGI();		
-		//}
+		if (request.getIsCgi()) {
+			state = WAIT_CGI;
+			cgi.launchCgi(request);
+			changeEpollMode(EPOLLOUT);
+			return ;
+		}
 		// TODO: 408: timeout
 		// TODO: 411 => disconnect?
 		// TODO: 413 => disconnect?
@@ -84,6 +87,7 @@ void Client::recvFrom() {
 		
 		// this will cause the event loop to trigger sendTo()
 		changeEpollMode(EPOLLOUT);
+		state = SEND;
 	} else {
 		// go back to event loop and wait to receive more
 		return ;
@@ -91,12 +95,17 @@ void Client::recvFrom() {
 }
 
 void Client::sendTo() {
-	if (request.state == WAIT_CGI) {
-		cgi.checkCgi(); // this has waitpid
+	if (state == WAIT_CGI) {
+		std::cout << "DOING CGI" << std::endl;
+		t_cgi_state cgi_result = cgi.checkCgi(); // this has waitpid
+		if (cgi_result == CGI_READY) {
+			state = SEND;
+		}
 	} else {
 		if (send_queue.size() < 1) {
 			std::cerr << "sendTo() called with empty send_queue" << std::endl;
 			changeEpollMode(EPOLLIN);
+			state = IDLE;
 			return ;
 		}
 
@@ -128,6 +137,7 @@ void Client::sendTo() {
 					closeConnection(epoll_fd, fd);
 				} else { // nothing left to send
 					changeEpollMode(EPOLLIN);
+					state = IDLE;
 				}
 			}
 		}
