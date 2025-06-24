@@ -29,3 +29,20 @@ struct ConfigFile
 {
 	std::vector<ServerConfig> servers;
 };
+
+struct Response {
+	int			status_code = 200;
+	std::string status_code_str = "OK";
+
+	std::string method = "";
+	std::string path = "";
+	std::string version = "";
+
+	std::string root = "";
+
+	LocationConfig location;
+
+	std::string body = "";
+	std::string header = "";
+	std::string full_response = "";
+};

@@ -68,6 +68,9 @@ void Client::recvFrom() {
 
 	e_req_state status = request.addToRequest(std::string(buf, bytes_read));
 	if (status == READY) {
+		//if (request.getIsCGI()) {
+		//	launchCGI();		
+		//}
 		// TODO: 408: timeout
 		// TODO: 411 => disconnect?
 		// TODO: 413 => disconnect?
@@ -88,40 +91,44 @@ void Client::recvFrom() {
 }
 
 void Client::sendTo() {
-	if (send_queue.size() < 1) {
-		std::cerr << "sendTo() called with empty send_queue" << std::endl;
-		changeEpollMode(EPOLLIN);
-		return ;
-	}
+	if (request.state == WAIT_CGI) {
+		cgi.checkCgi(); // this has waitpid
+	} else {
+		if (send_queue.size() < 1) {
+			std::cerr << "sendTo() called with empty send_queue" << std::endl;
+			changeEpollMode(EPOLLIN);
+			return ;
+		}
 
-	std::string to_send = send_queue.front().response.full_response;
+		std::string to_send = send_queue.front().response.full_response;
 
-	// std::cout << "SENDING" << to_send <<std::endl;
-	int bytes_sent = send(fd, to_send.c_str(), to_send.length(), MSG_NOSIGNAL);
-	if (bytes_sent < 0) {
-	// TODO: currently not throwing here because maybe this is not a fatal error
-		std::cerr << "send() returned -1" << std::endl;
-	}
+		// std::cout << "SENDING" << to_send <<std::endl;
+		int bytes_sent = send(fd, to_send.c_str(), to_send.length(), MSG_NOSIGNAL);
+		if (bytes_sent < 0) {
+		// TODO: currently not throwing here because maybe this is not a fatal error
+			std::cerr << "send() returned -1" << std::endl;
+		}
 
-	to_send.erase(0, bytes_sent);
+		to_send.erase(0, bytes_sent);
 
-	// default mode is keep-alive
-	std::string conn_type = "keep-alive";
-	try {
-		conn_type = send_queue.front().header.at("connection");
-	} catch (...) {
-		std::cerr << "Client::sendTo(): no Connection field in header"\
-			<< std::endl;
-	}
+		// default mode is keep-alive
+		std::string conn_type = "keep-alive";
+		try {
+			conn_type = send_queue.front().header.at("connection");
+		} catch (...) {
+			std::cerr << "Client::sendTo(): no Connection field in header"\
+				<< std::endl;
+		}
 
-	if (to_send.empty()) {
-		send_queue.erase(send_queue.begin());
-		if (send_queue.size() == 0) {
-			// we have sent all responses in the queue
-			if (conn_type == "close" ) {
-				closeConnection(epoll_fd, fd);
-			} else { // nothing left to send
-				changeEpollMode(EPOLLIN);
+		if (to_send.empty()) {
+			send_queue.erase(send_queue.begin());
+			if (send_queue.size() == 0) {
+				// we have sent all responses in the queue
+				if (conn_type == "close" ) {
+					closeConnection(epoll_fd, fd);
+				} else { // nothing left to send
+					changeEpollMode(EPOLLIN);
+				}
 			}
 		}
 	}

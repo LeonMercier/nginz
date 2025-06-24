@@ -204,9 +204,14 @@ static LocationConfig getLocation(std::string path, ServerConfig config) {
 	return empty_location;
 }
 
+static int	validateRequest(std::map<std::string, std::string> header, Response &response, ServerConfig &config)
+{
+	// check if path/extension suggests cgi
+	// is the method allowed in config (compare response.location to config)
+	return 0;
+}
 
-
-Response getResponse(std::string request, ServerConfig config, int status_code) {
+Response getResponse(std::string request, ServerConfig config, int status_code, Request *req_ref) {
 	Response response;
 	std::istringstream iss(request);
 	iss >> response.method >> response.path >> response.version;
@@ -216,7 +221,19 @@ Response getResponse(std::string request, ServerConfig config, int status_code) 
 	// std::cout << ">>>" << "Path: " << response.path << std::endl;
 	// std::cout << ">>>" << "Location: " << response.location.path << std::endl;
 
-	parseHeader(request);
+	// parseHeader(request);
+	if (status_code == 200) {
+		status_code = validateRequest(req_ref->getHeaders(), response, config);
+	}
+
+	// if request looks like CGI
+	//ref_req.client.cgi.launchCgi();
+	// set client.cgi_pid to the pid of the process
+	// set to EPOLLOUT
+	req_ref->state = WAIT_CGI;
+
+	
+
 	if (status_code != 200)
 		handleError(response, config, status_code);
 	else if (response.method == "GET")

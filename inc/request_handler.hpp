@@ -9,25 +9,11 @@
 #include <iostream>
 #include <map>
 #include <utility> //swap
+#include "Request.hpp"
 
-struct Response {
-	int			status_code = 200;
-	std::string status_code_str = "OK";
 
-	std::string method = "";
-	std::string path = "";
-	std::string version = "";
-
-	std::string root = "";
-
-	LocationConfig location;
-
-	std::string body = "";
-	std::string header = "";
-	std::string full_response = "";
-};
-
-Response getResponse(std::string request, ServerConfig config, int status_code);
+//class Request;
+Response getResponse(std::string request, ServerConfig config, int status_code, Request *req_ref);
 int getPostContentLength (std::string request);
 bool isPostAllowed(std::string path, ServerConfig config);
 

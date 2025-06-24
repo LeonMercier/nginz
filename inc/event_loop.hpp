@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../inc/Client.hpp"
-#include "../inc/Structs.hpp"
+#include "Client.hpp"
+#include "Structs.hpp"
 
 int eventLoop(std::vector<ServerConfig>);

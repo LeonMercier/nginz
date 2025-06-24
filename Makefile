@@ -21,13 +21,15 @@ SOURCES = src/main.cpp \
 			src/Client.cpp \
 			src/ConfigParser.cpp \
 			src/event_loop.cpp \
-			src/request_handler.cpp \
 			src/autoindex.cpp \
 			src/parse_header.cpp \
-			src/Request.cpp
+			src/Request.cpp \
+			src/CgiHandler.cpp
+# src/request_handler.cpp
 			
-HEADERS = inc/Client.hpp inc/event_loop.hpp inc/request_handler.hpp \
-		  inc/Request.hpp
+HEADERS = inc/Client.hpp inc/event_loop.hpp \
+		  inc/Request.hpp inc/CgiHandler.hpp
+#inc/request_handler.hpp
 
 SRCDIR = src
 OBJDIR = obj

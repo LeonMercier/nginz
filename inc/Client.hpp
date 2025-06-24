@@ -3,8 +3,9 @@
 #include "StandardLibraries.hpp"
 #include "Structs.hpp"
 #include "parse_header.hpp"
-#include "request_handler.hpp"
+//#include "request_handler.hpp"
 #include "Request.hpp"
+#include "CgiHandler.hpp"
 
 typedef struct s_rsp {
 	std::map<std::string, std::string>	header;
@@ -21,6 +22,9 @@ typedef enum e_client_state {
 
 class Client {
 public:
+
+	CgiHandler cgi;
+
 	// calls Request constructor with configs
 	Client(std::vector<ServerConfig> configs, int epoll_fd = -1, int fd = -1);
 	Client(const Client &source) = default;
@@ -33,6 +37,7 @@ public:
 	void			closeConnection(int epoll_fd, int client_fd);
 	void			recvFrom();
 	void			sendTo();
+
 
 private:
 	std::vector<ServerConfig>	configs;
