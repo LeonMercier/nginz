@@ -48,7 +48,6 @@ const std::map<int, std::string> errorHttps {
 
 typedef enum {
 	RECV_MORE,
-	WAIT_CGI,
 	READY
 } e_req_state;
 
@@ -96,5 +95,5 @@ private:
 	std::string							raw_request;
 	Response						response;
 	std::map<std::string, std::string>	headers;
-	bool								is_cgi;
+	bool								is_cgi = false;
 };
