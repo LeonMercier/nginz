@@ -6,13 +6,10 @@
 int	main(int argc, char **argv)
 {
 	try {
-		if (argc != 2 || std::string(argv[1]) != "configuration/webserv.conf")
-		{
-			 std::cout << "\nRun with \"./webserv configuration/webserv.conf\"" << std::endl;
-			//eventLoop();
-			return (0);
-		}
-		std::vector<ServerConfig> server_configs = configParser(argv[1]);
+		std::vector<ServerConfig> server_configs = configParser((char *)"configuration/webserv.conf");
+		if (argc == 2)
+			 std::vector<ServerConfig> server_configs = configParser(argv[1]);
+		// TODO add error for too many args?
 		eventLoop(server_configs);
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
