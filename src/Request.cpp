@@ -13,6 +13,14 @@ e_req_state	Request::addToRequest(std::string part) {
 
 	_raw_request += std::string(part);
 
+	if (receiving_chunked) {
+		e_req_state chunked_state = handleChunked(0, false);
+		if (chunked_state == RECV_MORE) {
+			return RECV_MORE;
+		}
+		handleCompleteRequest(200);
+	}
+
 	if (headerIsComplete()) {
 		size_t body_start =
 			_raw_request.find(header_terminator) + header_terminator.length();
@@ -33,6 +41,16 @@ e_req_state	Request::addToRequest(std::string part) {
 		else if (method->second == "GET") {
 			// std::cerr << "Request::addToRequest(): happy" << std::endl;
 			handleCompleteRequest(200);
+<<<<<<< HEAD
+=======
+			return READY;
+		} else if (method->second == "POST") {
+			return handlePost(body_start);
+
+		} else {
+			std::cerr << "Request::addToRequest(): unknown method" << std::endl;
+			handleCompleteRequest(400);
+>>>>>>> d615427 (draft for handleChunked)
 			return READY;
 		}
 		else if (method->second == "POST") {
@@ -86,6 +104,18 @@ void Request::handleCompleteRequest(int status)
 	getResponse(status);
 }
 
+e_req_state Request::handleChunked(size_t header_end, bool isInitialRecv) {
+	if (isInitialRecv) {
+		// skip to end of header
+		// create file
+		// write to file
+		// erase raw_request
+	} else {
+		//append to file
+		//erase raw_request
+	}
+}
+
 e_req_state Request::handlePost(size_t header_end) {
 	//method is not allowed in config
 	initResponseStruct(200);
@@ -100,7 +130,7 @@ e_req_state Request::handlePost(size_t header_end) {
 
 			std::cout << "receiving chunked transfer" << std::endl;
 			// TODO: implement checks for chunked transfer xD
-			return RECV_MORE;
+			return handleChunked(header_end, true);
 		}
 		// header has transfer-encoding but it is not set to chunked =>
 		// we proceed to look for content-length
