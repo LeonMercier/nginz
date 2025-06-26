@@ -13,12 +13,15 @@ e_req_state	Request::addToRequest(std::string part) {
 
 	_raw_request += std::string(part);
 
+	// headers will not be parsed multiple times when they have already been
+	// received
 	if (receiving_chunked) {
 		e_req_state chunked_state = handleChunked(0, false);
 		if (chunked_state == RECV_MORE) {
 			return RECV_MORE;
 		}
 		handleCompleteRequest(200);
+		return READY;
 	}
 
 	if (headerIsComplete()) {
@@ -41,16 +44,6 @@ e_req_state	Request::addToRequest(std::string part) {
 		else if (method->second == "GET") {
 			// std::cerr << "Request::addToRequest(): happy" << std::endl;
 			handleCompleteRequest(200);
-<<<<<<< HEAD
-=======
-			return READY;
-		} else if (method->second == "POST") {
-			return handlePost(body_start);
-
-		} else {
-			std::cerr << "Request::addToRequest(): unknown method" << std::endl;
-			handleCompleteRequest(400);
->>>>>>> d615427 (draft for handleChunked)
 			return READY;
 		}
 		else if (method->second == "POST") {
@@ -104,15 +97,54 @@ void Request::handleCompleteRequest(int status)
 	getResponse(status);
 }
 
+// returns true when the final chunk has bee parsed
+static bool extractChunks(std::string &buf, std::vector<std::string> &chunks) {
+	static int left_to_read = 0;
+
+	std::string chunk;
+	std::istringstream stream(buf);
+
+	if (left_to_read == 0) {
+		stream >> std::hex >> left_to_read;
+		std::cout << "left_to_read: " << left_to_read << std::endl;
+	} else {
+		// read left_to_read bytes
+	}
+
+	return true;
+}
+
 e_req_state Request::handleChunked(size_t header_end, bool isInitialRecv) {
+	std::cout << "handleChunked(): " << _raw_request << std::endl;
+
+	std::vector<std::string> chunks;
+	bool wasFinalChunk = false;
+	
+	// TODO: generate filename
+	_filename_infile = "tmp_chunked";
+
 	if (isInitialRecv) {
-		// skip to end of header
-		// create file
-		// write to file
-		// erase raw_request
+		_infile_fd = open(_filename_infile.c_str(), O_APPEND);
+		_receiving_chunked = true;
+		_has_infile = true;
+		_raw_request.erase(0, header_end);
 	} else {
 		//append to file
 		//erase raw_request
+		//close file if done
+	}
+	wasFinalChunk = extractChunks(_raw_request, chunks);
+	_raw_request = "";
+	for (auto it = chunks.begin(); it != chunks.end(); it++) {
+		write(_infile_fd, it->c_str(), it->length());
+	}
+	if (wasFinalChunk) {
+		// TODO: do we need to reset receiving_chunked or will the Request
+		// always be destroyed after this?
+		close(_infile_fd);
+		return READY;
+	} else {
+		return RECV_MORE;
 	}
 }
 
@@ -129,8 +161,14 @@ e_req_state Request::handlePost(size_t header_end) {
 		if (_headers.at("transfer-encoding") == "chunked") {
 
 			std::cout << "receiving chunked transfer" << std::endl;
-			// TODO: implement checks for chunked transfer xD
-			return handleChunked(header_end, true);
+			
+			// TODO: this reads weird
+			if (!_receiving_chunked) {
+				return handleChunked(header_end, true);
+			} else {
+				return handleChunked(header_end, false);
+			}
+
 		}
 		// header has transfer-encoding but it is not set to chunked =>
 		// we proceed to look for content-length
