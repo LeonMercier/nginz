@@ -8,8 +8,17 @@ std::map<std::string, std::string> parseHeader(std::string request) {
 	int pos;
 	
 	iss >> method >> path >> version;
+
+	if (path.find('?') != std::string::npos) {
+		std::string form_path = path.substr(0, path.find('?'));
+		std::string query_string = path.substr(path.find('?') + 1);
+		result.insert(std::pair<std::string, std::string>("path", form_path));
+		result.insert(std::pair<std::string, std::string>("query_string", query_string));
+	}
+	else
+		result.insert(std::pair<std::string, std::string>("path", path));
+
 	result.insert(std::pair<std::string, std::string>("method", method));
-	result.insert(std::pair<std::string, std::string>("path", path));
 	result.insert(std::pair<std::string, std::string>("version", version));
 
 	while (getline(iss, temp)) {

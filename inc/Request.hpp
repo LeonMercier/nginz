@@ -1,6 +1,5 @@
 #pragma once
 
-//#include "request_handler.hpp"
 #include "parse_header.hpp"
 #include "StandardLibraries.hpp"
 #include "Structs.hpp"
@@ -8,15 +7,35 @@
 
 
 const std::map<std::string, std::string> extensions {
+	{".aac", "audio/aac"},
+	{".bmp", "image/bmp"},
+	{".css", "text/css"},
+	{".csv", "text/csv"},
+	{".epub", "application/epub+zip"},
 	{".gif", "image/gif"},
+	{".htm", "text/html"},
 	{".html", "text/html"},
 	{".jpeg", "image/jpeg"},
 	{".jpg", "image/jpeg"},
+	{".js", "text/javascript"},
+	{".json", "application/json"},
+	{".mid", "audio/midi"},
+	{".midi", "audio.midi"},
+	{".mp3", "audio/mpeg"},
+	{".mp4", "video/mp4"},
+	{".mpeg", "audio/mpeg"},
+	{".pdf", "application.pdf"},
+	{".php", "application/x-httpd-php"},
+	{".png", "image/png"},
+	{".py", "text/x-python"},
+	{".sh", "application/x-sh"},
 	{".txt", "text/html"},
-	{".png", "image/png"}
+	{".wav", "audio/wave"},
+	{".zip", "application/zip"}
 };
 
 const std::map<int, std::string> errorCodes {
+	{301, "Moved Permanently"},			//Redirect error
 	{400, "Bad Request"},				//Malformed request syntax
 	{403, "Forbidden"}, 				//Understood the request but refused to fulfill it
 	{404, "Not Found"}, 				//Request was not found either temporarily or permantly
@@ -32,6 +51,7 @@ const std::map<int, std::string> errorCodes {
 };
 
 const std::map<int, std::string> errorHttps {
+	{301, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>301 Moved Permanently</title>\r\n</head>\r\n<body>\r\n<h1>301 Moved Permanently</h1>\r\n<p>The requested document has moved permanently.</p>\r\n</body>\r\n</html>"},
     {400, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>400 Bad Request</title>\r\n</head>\r\n<body>\r\n<h1>400 Bad Request</h1>\r\n<p>Request body could not be read properly.</p>\r\n</body>\r\n</html>\r\n"},
     {403, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>403 Forbidden</title>\r\n</head>\r\n<body>\r\n<h1>403 Forbidden</h1>\r\n<p>You don't have permission to access the resource.</p>\r\n</body>\r\n</html>\r\n"},
     {404, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>404 Not Found</title>\r\n</head>\r\n<body>\r\n<h1>404 Page Not Found</h1>\r\n<p>Sorry, the resource you requested could not be found.</p>\r\n</body>\r\n</html>\r\n"},
@@ -73,27 +93,39 @@ public:
 	void								setConfig();
 
 	// GET calls this directly
-	void handleCompleteRequest(size_t body_start, size_t body_length, int status);
+	void 								handleCompleteRequest(size_t body_start, size_t body_length, int status);
 
 	// check if body is received and then call handleCompleteRequest()
 	e_req_state handlePost(size_t body_start);
 
-	bool headerIsComplete();
+	bool								headerIsComplete();
+	void								getResponse(int status_code);
+	int									getPostContentLength (std::string request);
+	//bool								isPostAllowed(std::string path, ServerConfig config);
+	void								validateRequest();
+	void								getLocation();
+	void 								handleGet();
+	void 								handleDelete();
+	void								createBody(std::string filename);
+	void 								createHeader(std::string content_type);
+	void								handleError(int status_code);
+	void								getAutoIndex();
+	void 								setStatusCode(int status_code);
+	void								createBodyForError(std::string filename);
 
+	//Getters
 	Response							getRes();
 	ServerConfig						getConfig();
 	std::map<std::string, std::string>	getHeaders();
 	bool								getIsCgi();
+
 	e_req_state							state;
-	void getResponse(int status_code);
-	int getPostContentLength (std::string request);
-	bool isPostAllowed(std::string path, ServerConfig config);
 
 private:
-	std::vector<ServerConfig>			all_configs;
-	ServerConfig					config;
-	std::string							raw_request;
-	Response						response;
-	std::map<std::string, std::string>	headers;
-	bool								is_cgi = false;
-};
+	std::vector<ServerConfig>			_all_configs;
+	ServerConfig						_config;
+	std::string							_raw_request;
+	Response							_response;
+	std::map<std::string, std::string>	_headers;
+	bool								_is_cgi = false;
+};	

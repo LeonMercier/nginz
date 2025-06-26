@@ -24,12 +24,12 @@ SOURCES = src/main.cpp \
 			src/autoindex.cpp \
 			src/parse_header.cpp \
 			src/Request.cpp \
-			src/CgiHandler.cpp
-# src/request_handler.cpp
+			src/CgiHandler.cpp \
+			src/utils.cpp
 			
 HEADERS = inc/Client.hpp inc/event_loop.hpp \
-		  inc/Request.hpp inc/CgiHandler.hpp
-#inc/request_handler.hpp
+		  inc/Request.hpp inc/CgiHandler.hpp \
+		  inc/utils.hpp
 
 SRCDIR = src
 OBJDIR = obj

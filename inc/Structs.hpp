@@ -38,11 +38,13 @@ struct Response {
 	std::string path = "";
 	std::string version = "";
 
-	std::string root = "";
-
 	LocationConfig location;
 
 	std::string body = "";
 	std::string header = "";
 	std::string full_response = "";
+
+	std::string redirect_path = "";
+
+	bool is_directory = false;
 };
