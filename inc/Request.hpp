@@ -93,7 +93,7 @@ public:
 	void								setConfig();
 
 	// GET calls this directly
-	void 								handleCompleteRequest(size_t body_start, size_t body_length, int status);
+	void 								handleCompleteRequest(int status);
 
 	// check if body is received and then call handleCompleteRequest()
 	e_req_state handlePost(size_t body_start);
@@ -112,6 +112,9 @@ public:
 	void								getAutoIndex();
 	void 								setStatusCode(int status_code);
 	void								createBodyForError(std::string filename);
+	void								initResponseStruct(int status_code);
+	bool								methodIsNotAllowed();
+	void 								printRequest(); //Remove
 
 	//Getters
 	Response							getRes();
@@ -128,4 +131,14 @@ private:
 	Response							_response;
 	std::map<std::string, std::string>	_headers;
 	bool								_is_cgi = false;
+	bool 								_is_directory = false;
+	
+	std::string							_method;
+	std::string							_path;
+	std::string							_version;
+
+	LocationConfig 						_location;
+
+	int									_status_code = 200;
+	std::string							_status_code_str = "OK";
 };	
