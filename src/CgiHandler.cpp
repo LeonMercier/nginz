@@ -24,11 +24,8 @@ t_cgi_state	CgiHandler::checkCgi()
 	return CGI_READY;
 }
 
-void	getCgiEnv(std::map<std::string, std::string> &headers, const ServerConfig &config, std::vector<char*> &envp)
+void	getCgiEnv(std::map<std::string, std::string> &headers, const ServerConfig &config, std::vector<char*> &envp, std::vector<std::string> &envVars)
 {
-	std::vector<std::string> envVars;
-
-
 	std::string contentLength = "CONTENT_LENGTH=";
 	if (headers.find("content-length") != headers.end()){
 		contentLength += headers.at("content-length");
@@ -62,7 +59,7 @@ void	getCgiEnv(std::map<std::string, std::string> &headers, const ServerConfig &
 	
 	envVars.push_back(contentLength);
 	envVars.push_back(contentType);
-	envVars.push_back(query);
+	envVars.push_back("QUERY_STRING=/who.py?firstname=HAHAA&lastname=&favcolor=");
 	envVars.push_back(method);
 	envVars.push_back(scriptFileName);
 	envVars.push_back(serverPort);
@@ -87,6 +84,7 @@ void	CgiHandler::launchCgi(Request &request)
 {
 	std::map<std::string, std::string>	headers = request.getHeaders();
 	std::vector<char*> envp;
+	std::vector<std::string> envVars;
 
 	// Creating temp input and output file pointers for CGI (input for POST body, output for script's output)
 
@@ -104,8 +102,10 @@ void	CgiHandler::launchCgi(Request &request)
 		// throw
 	}
 	
-	getCgiEnv(headers, request.getConfig(), envp);
+	getCgiEnv(headers, request.getConfig(), envp, envVars);
 
+	for (size_t i = 0; i < envp.size(); ++i)
+		std::cout << "env[" << i << "]: " << envp[i] << "\n";
 	// we have saved the post body into infile before
 	close(input_fd); // move file position indicator to the beginning of the file stream
 
@@ -126,16 +126,26 @@ void	CgiHandler::launchCgi(Request &request)
 		close(output_fd);
 
 		char* argv[] = {
-			(char*)"./cgi-bin/script.py?name=Saara",
+			(char*)"./www/who.py",
 			nullptr
 		};
-
-		// execve(argv[0], argv, envp);
+		// char *aa = "QUERY_STRING=/who.py?firstname=HAHAA&lastname=&favcolor=";
+		// char *bb = 0;
+		// char **asia;
+		// asia[0] = aa ;
+		// asia[1] = bb;
+		execve(argv[0], argv, envp.data());
 		// throw something ?
 	}
 	else {
 		// Parent
-
+		waitpid(p, NULL, 0);
+		close(output_fd);
+		std::fstream fafa(output_filename);
+		//int fd = open(output_filename);
+		std::string str;
+		getline(fafa, str);
+		std::cout << "FIRST LINE OF CGI OUTPUT:" << str << std::endl;
 		// waitpid is not here, nor is reading from the outfile
 		// we save the pid somewhere. Where?
 

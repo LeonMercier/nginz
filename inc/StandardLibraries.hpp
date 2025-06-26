@@ -24,3 +24,5 @@
 #include <netdb.h> // struct addrinfo
 #include <unistd.h> // 
 #include <vector>
+#include <sys/wait.h>
+
