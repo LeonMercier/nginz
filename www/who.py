@@ -8,11 +8,14 @@
 ##############################################################################
 
 import os
+import sys
 
 raw_query = os.environ['QUERY_STRING']
-query = raw_query.split('?')
+# print("AAAAAAAAAAA", file=sys.stderr)
+# print(raw_query, file=sys.stderr)
+# query = raw_query.split('?')
 # disregard everything before question mark
-fields = query[1].split('&')
+fields = raw_query.split('&')
 map = dict()
 for field in fields:
     split_field = field.split('=')

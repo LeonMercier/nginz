@@ -369,8 +369,8 @@ void Request::getResponse(int status_code) {
 	validateRequest();
 	std::cout << "|  " << "Validate Result: " << _response.status_code << std::endl;
 	
-	if (headers.at("path") == "/who.py?firstname=das&lastname=&favcolor="){
-		is_cgi = true;
+	if (_headers.at("path") == "/who.py"){
+		_is_cgi = true;
 	}
 	
 	if (_response.status_code != 200)

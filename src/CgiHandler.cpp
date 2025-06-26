@@ -21,7 +21,18 @@ t_cgi_state	CgiHandler::checkCgi()
 {
 	// TIME_OUT
 	//waitpid WNOHANG
-	return CGI_READY;
+	if (waitpid(_pid, NULL, 0) > 0){
+		std::cout << "\n\nCGI_READY, OUTPUT:\n" << std::endl;
+
+		std::fstream fafa(output_filename);
+		std::string str;
+		while (getline(fafa, str))
+		{
+			std::cout << str << std::endl;
+		}
+		return CGI_READY;
+	}
+	return (CGI_WAITING);
 }
 
 void	getCgiEnv(std::map<std::string, std::string> &headers, const ServerConfig &config, std::vector<char*> &envp, std::vector<std::string> &envVars)
@@ -41,9 +52,9 @@ void	getCgiEnv(std::map<std::string, std::string> &headers, const ServerConfig &
 		contentType += "text/plain"; // or "text/html"?
 	}
 	std::string query = "QUERY_STRING="; // check whether it's harmful to have this if no query
-	if (headers.find("query") != headers.end()) // or whatever it will be saved as
+	if (headers.find("query_string") != headers.end()) // or whatever it will be saved as
 	{
-		query += headers.at("query");
+		query += headers.at("query_string");
 	}
 	std::string method = "REQUEST_METHOD=";
 	if (headers.find("method") != headers.end()){
@@ -57,16 +68,17 @@ void	getCgiEnv(std::map<std::string, std::string> &headers, const ServerConfig &
 	std::string serverName = "SERVER_NAME=" + config.server_names[0]; // or should we just put IP here? we might have multiple names I'm confutse
 	std::string remoteAddr = "REMOTE_ADDR=" + config.listen_ip; // "The IP address of remote host", should this really be us?
 	
+	// std::cout << "\n\n\nQUERY: " << query << std::endl;
+
 	envVars.push_back(contentLength);
 	envVars.push_back(contentType);
-	envVars.push_back("QUERY_STRING=/who.py?firstname=HAHAA&lastname=&favcolor=");
+	envVars.push_back(query);
 	envVars.push_back(method);
 	envVars.push_back(scriptFileName);
 	envVars.push_back(serverPort);
 	envVars.push_back(serverName);
 	envVars.push_back(remoteAddr);
 
-	// should have pre or post incr+ in for loop?
 	for (size_t i = 0; i < envVars.size(); i++){
 		envp.push_back(const_cast<char*>(envVars[i].c_str()));
 	}
@@ -82,14 +94,14 @@ std::string	generateTempFilename()
 
 void	CgiHandler::launchCgi(Request &request)
 {
-	std::map<std::string, std::string>	headers = request.getHeaders();
+	std::map<std::string, std::string> headers = request.getHeaders();
 	std::vector<char*> envp;
 	std::vector<std::string> envVars;
 
 	// Creating temp input and output file pointers for CGI (input for POST body, output for script's output)
 
 	std::string	input_filename = generateTempFilename();
-	std::string output_filename = generateTempFilename();
+	output_filename = generateTempFilename();
 
 	int	input_fd = open(input_filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
 	if (input_fd < 0){
@@ -103,20 +115,18 @@ void	CgiHandler::launchCgi(Request &request)
 	}
 	
 	getCgiEnv(headers, request.getConfig(), envp, envVars);
-
-	for (size_t i = 0; i < envp.size(); ++i)
-		std::cout << "env[" << i << "]: " << envp[i] << "\n";
 	// we have saved the post body into infile before
-	close(input_fd); // move file position indicator to the beginning of the file stream
+	close(input_fd); // move file position indicator to the beginning of the file stream by closing
 
-	pid_t p = fork();
+	std::cout << "\n\n\n\nCGIHANDLER\n\n\n\n";
+	int pid = fork();
 
-	if (p < 0) {
+	if (pid < 0) {
 		close(input_fd);
 		close(output_fd);
 		throw std::runtime_error("fork() failed"); // are we closing the server?
 	}
-	else if (p == 0) {
+	else if (pid == 0) {
 	
 		// redirecting input and output fds to STDIN and STDOUT for execve
 		dup2(input_fd, STDIN_FILENO);
@@ -126,30 +136,15 @@ void	CgiHandler::launchCgi(Request &request)
 		close(output_fd);
 
 		char* argv[] = {
-			(char*)"./www/who.py",
+			(char*)"./www/who.py", // hardcoded now
 			nullptr
 		};
-		// char *aa = "QUERY_STRING=/who.py?firstname=HAHAA&lastname=&favcolor=";
-		// char *bb = 0;
-		// char **asia;
-		// asia[0] = aa ;
-		// asia[1] = bb;
 		execve(argv[0], argv, envp.data());
 		// throw something ?
 	}
 	else {
-		// Parent
-		waitpid(p, NULL, 0);
+		_pid = pid;
 		close(output_fd);
-		std::fstream fafa(output_filename);
-		//int fd = open(output_filename);
-		std::string str;
-		getline(fafa, str);
-		std::cout << "FIRST LINE OF CGI OUTPUT:" << str << std::endl;
-		// waitpid is not here, nor is reading from the outfile
-		// we save the pid somewhere. Where?
-
-		// Read from execves output file after waitpid and create response. Close and delete the files.
 	}
 }
 

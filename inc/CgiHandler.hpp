@@ -9,8 +9,10 @@ typedef enum e_cgi_state {
 } t_cgi_state;
 
 class CgiHandler {
-public:
-	int pid;
-	void	launchCgi(Request &request); //fork(), execve()
-	t_cgi_state	checkCgi(); // waitpid()
+	private:
+		int _pid;
+	public:
+		std::string output_filename;
+		void	launchCgi(Request &request); //fork(), execve()
+		t_cgi_state	checkCgi(); // waitpid()
 };
