@@ -21,6 +21,8 @@ t_cgi_state	CgiHandler::checkCgi()
 	return (CGI_WAITING);
 }
 
+// make a getter to CGI's type (Python or PHP based on extension) {}
+
 void	getCgiEnv(std::map<std::string, std::string> &headers, const ServerConfig &config, std::vector<char*> &envp, std::vector<std::string> &envVars)
 {
 	std::string contentLength = "CONTENT_LENGTH=";
@@ -46,21 +48,30 @@ void	getCgiEnv(std::map<std::string, std::string> &headers, const ServerConfig &
 	if (headers.find("method") != headers.end()){
 		method += headers.at("method");
 	}
-	std::string	scriptFileName = "SCRIPT_FILENAME="; // this actually has to be there(?)
+	std::string	scriptFileName = "SCRIPT_FILENAME=";
+	std::string pathInfo = "PATH_INFO="; // this actually has to be there(?)
 	if (headers.find("path") != headers.end()){
 		scriptFileName += headers.at("path");
+		pathInfo += headers.at("path");
 	}
 	std::string	serverPort = "SERVER_PORT=" + std::to_string(config.listen_port);
 	std::string serverName = "SERVER_NAME=" + config.server_names[0]; // or should we just put IP here? we might have multiple names I'm confutse
 	std::string remoteAddr = "REMOTE_ADDR=" + config.listen_ip; // "The IP address of remote host", should this really be us?
-	
-	// std::cout << "\n\n\nQUERY: " << query << std::endl;
+	std::string serverProtocol = "SERVER_PROTOCOL=HTTP/1.1"; // can it be hardcoded like this?
+	std::string redirectStatus = "REDIRECT_STATUS=200"; // can it be hardcoded like this?
+	std::string gatewayInterface = "GATEWAY_INTERFACE=CGI/1.1"; // can it be hardcoded like this?
+
+	// ScriptName (pain)
+	// std::string scriptName = "SCRIPT_NAME=" + root (how do we get it) + headers.at("path");
+
 
 	envVars.push_back(contentLength);
 	envVars.push_back(contentType);
 	envVars.push_back(query);
+	envVars.push_back(serverProtocol);
+	envVars.push_back(pathInfo);
 	envVars.push_back(method);
-	envVars.push_back(scriptFileName);
+	envVars.push_back(scriptFileName); // check if right
 	envVars.push_back(serverPort);
 	envVars.push_back(serverName);
 	envVars.push_back(remoteAddr);
@@ -115,7 +126,8 @@ void	CgiHandler::launchCgi(Request &request)
 		close(output_fd);
 
 		char* argv[] = {
-			(char*)"./www/who.py", // hardcoded now
+			(char*)"/usr/bin/python3" // absolute path to the interpreter (we get it from the location) // (char *)request.path.to_str();
+			(char*)"./www/who.py", // hardcoded now // request.root + request.path // (char *)(request.root + request.path).to_str();
 			nullptr
 		};
 		execve(argv[0], argv, envp.data());
