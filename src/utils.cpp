@@ -26,3 +26,12 @@ std::string	generateTempFilename()
 	static int counter = 0;
 	return (prefix + std::to_string(counter++));
 }
+std::string fileToString(std::string filename) {
+	std::ifstream file(filename, std::ios::binary);
+	if (!file.is_open()) {
+		throw std::ios_base::failure("Failed to open file: " + filename);
+    }
+	std::ostringstream sbody;
+	sbody << file.rdbuf();
+	return sbody.str();
+}

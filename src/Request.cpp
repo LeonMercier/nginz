@@ -259,12 +259,11 @@ void Request::createHeader(std::string content_type) {
 }
 
 void Request::createBody(std::string filename) {
-	std::ifstream file(filename, std::ios::binary);
-	if (!file.is_open())
-		return handleError(404);
-	std::ostringstream sbody;
-	sbody << file.rdbuf();
-	_response.body = sbody.str();
+	try {
+		_response.body = fileToString(filename);
+	} catch (const std::ios_base::failure& e){
+		handleError(404);
+	}
 }
 
 void Request::handleDelete()
