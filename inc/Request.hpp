@@ -120,6 +120,8 @@ public:
 	Response							getRes();
 	ServerConfig						getConfig();
 	std::map<std::string, std::string>	getHeaders();
+	LocationConfig 						getLocationConfig();
+
 	bool								getIsCgi();
 
 	e_req_state							state;

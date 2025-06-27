@@ -150,6 +150,11 @@ bool Request::headerIsComplete() {
 	return false;
 }
 
+LocationConfig 	Request::getLocationConfig()
+{
+	return _location;
+}
+
 Response		Request::getRes() {
 	return _response;
 }
