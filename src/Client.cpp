@@ -1,5 +1,6 @@
 
 #include "../inc/Client.hpp"
+#include "../inc/utils.hpp"
 
 Client::Client(std::vector<ServerConfig> configs, int epoll_fd, int fd) :
 	configs(configs),
@@ -95,10 +96,19 @@ void Client::recvFrom() {
 }
 
 void Client::sendTo() {
+	std::string to_send = "";
 	if (state == WAIT_CGI) {
 		std::cout << "DOING CGI" << std::endl;
 		t_cgi_state cgi_result = cgi.checkCgi(); // this has waitpid
 		if (cgi_result == CGI_READY) {
+			try {
+				t_rsp tmp{};
+				tmp.response.full_response = fileToString(cgi.output_filename);
+				send_queue.push_back(tmp);
+			} catch (const std::ios_base::failure& e){
+				// TODO how to handle error from client?
+			}
+
 			state = SEND;
 		}
 	} else {
@@ -109,7 +119,9 @@ void Client::sendTo() {
 			return ;
 		}
 
-		std::string to_send = send_queue.front().response.full_response;
+		if (to_send.empty()) {
+			to_send = send_queue.front().response.full_response;
+		}
 
 		// std::cout << "SENDING" << to_send <<std::endl;
 		int bytes_sent = send(fd, to_send.c_str(), to_send.length(), MSG_NOSIGNAL);
