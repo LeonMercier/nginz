@@ -126,7 +126,7 @@ void	CgiHandler::launchCgi(Request &request)
 		close(output_fd);
 
 		char* argv[] = {
-			(char*)"/usr/bin/python3" // absolute path to the interpreter (we get it from the location) // (char *)request.path.to_str();
+			(char*)"/usr/bin/python3", // absolute path to the interpreter (we get it from the location) // (char *)request.path.to_str();
 			(char*)"./www/who.py", // hardcoded now // request.root + request.path // (char *)(request.root + request.path).to_str();
 			nullptr
 		};
