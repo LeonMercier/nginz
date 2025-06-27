@@ -19,3 +19,10 @@ void removeEndSlash(std::string &str) {
 		str.pop_back();
 	}
 }
+
+std::string	generateTempFilename()
+{
+	std::string prefix = "/tmp/webserv_file_";
+	static int counter = 0;
+	return (prefix + std::to_string(counter++));
+}

@@ -2,6 +2,7 @@
 
 #include "StandardLibraries.hpp"
 #include "Request.hpp"
+#include "utils.hpp"
 
 typedef enum e_cgi_state {
 	CGI_READY,
