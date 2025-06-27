@@ -369,9 +369,9 @@ void Request::getResponse(int status_code) {
 	validateRequest();
 	std::cout << "|  " << "Validate Result: " << _response.status_code << std::endl;
 	
-	// if request looks like CGI
-	// set cgi_pid to the pid of the process
-	// state = WAIT_CGI;
+	if (_headers.at("path") == "/who.py"){
+		_is_cgi = true;
+	}
 	
 	if (_response.status_code != 200)
 		handleError(_response.status_code);
