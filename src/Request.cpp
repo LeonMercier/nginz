@@ -27,12 +27,12 @@ e_req_state	Request::addToRequest(std::string part) {
 		// no method field
 		if (method == _headers.end()) {
 			std::cerr << "Request::addToRequest(): no method field" << std::endl;
-			handleCompleteRequest(body_start, 0, 400);
+			handleCompleteRequest(400);
 			return READY;
 		}
 		else if (method->second == "GET") {
 			// std::cerr << "Request::addToRequest(): happy" << std::endl;
-			handleCompleteRequest(body_start, 0, 200);
+			handleCompleteRequest(200);
 			return READY;
 		}
 		else if (method->second == "POST") {
@@ -40,7 +40,7 @@ e_req_state	Request::addToRequest(std::string part) {
 		}
 		else {
 			std::cerr << "Request::addToRequest(): unknown method" << std::endl;
-			handleCompleteRequest(body_start, 0, 400);
+			handleCompleteRequest(400);
 			return READY;
 		}
 	}
@@ -77,7 +77,7 @@ void	Request::setConfig() {
 	}
 }
 
-void Request::handleCompleteRequest(size_t body_start,size_t body_length, int status)
+void Request::handleCompleteRequest(int status)
 {
 	// this may be unnecessary since we do not support pipelining
 	//std::string whole_req = raw_request.substr(0, body_start + body_length);
@@ -87,6 +87,13 @@ void Request::handleCompleteRequest(size_t body_start,size_t body_length, int st
 }
 
 e_req_state Request::handlePost(size_t header_end) {
+	//method is not allowed in config
+	initResponseStruct(200);
+	if (methodIsNotAllowed()) {
+		handleCompleteRequest(405);
+		return READY;
+	}
+
 	// if there is transfer-encoding, then content-length can be ignored
 	if (_headers.find("transfer-encoding") != _headers.end()) {
 		if (_headers.at("transfer-encoding") == "chunked\r") {
@@ -103,7 +110,7 @@ e_req_state Request::handlePost(size_t header_end) {
 
 	// content-length missing
 	if (_headers.find("content-length") == _headers.end()) {
-		handleCompleteRequest(header_end, 0, 411);
+		handleCompleteRequest(411);
 		return READY;
 	}
 
@@ -121,13 +128,13 @@ e_req_state Request::handlePost(size_t header_end) {
 	if (_config.client_max_body_size != 0
 		&& content_length > _config.client_max_body_size) {
 		std::cerr << "Client body length larger than allowed" << std::endl;
-		handleCompleteRequest(header_end, 0, 413);
+		handleCompleteRequest(413);
 		return READY;
 	}
 
 	// happy path
 	if (_raw_request.length() >= header_end + content_length) {
-		handleCompleteRequest(header_end, content_length, 200);
+		handleCompleteRequest(200);
 		return READY;
 	} else {
 		return RECV_MORE;
@@ -182,17 +189,17 @@ int Request::getPostContentLength (std::string request) {
 // }
 
 void Request::setStatusCode(int status_code) {
-	_response.status_code = status_code;
+	_status_code = status_code;
 	for (auto& p : errorCodes) {
 		if (status_code == p.first) {
-			_response.status_code_str = p.second;
+			_status_code_str = p.second;
 		}
 	}
 }
 
 void Request::getAutoIndex() {
 	try {
-		_response.body = generateAutoIndex(_response.path, _config);
+		_response.body = generateAutoIndex(_path, _config);
 	} catch (...) {
 		handleError(404);
 	}
@@ -203,7 +210,7 @@ void Request::createBodyForError(std::string filename) {
 	std::ifstream file(filename, std::ios::binary);
 	if (!file.is_open()) {
 		for (auto& p : errorHttps) {
-			if (_response.status_code == p.first) {
+			if (_status_code == p.first) {
 				_response.body = p.second;
 				return;
 			}
@@ -217,13 +224,13 @@ void Request::createBodyForError(std::string filename) {
 void Request::handleError(int status_code) {
 	setStatusCode(status_code);
 	for (auto& p : _config.error_pages) {
-		if (_response.status_code == p.first) {
+		if (_status_code == p.first) {
 			createBodyForError(p.second);
 		}
 	}
 	if (_response.body == "") {
 		for (auto& p : errorHttps) {
-			if (_response.status_code == p.first) {
+			if (_status_code == p.first) {
 				_response.body = p.second;
 			}
 		}
@@ -232,14 +239,14 @@ void Request::handleError(int status_code) {
 }
 
 void Request::createHeader(std::string content_type) {
-	_response.header = "HTTP/1.1 " + std::to_string(_response.status_code) + " " + _response.status_code_str +"\r\n"
+	_response.header = "HTTP/1.1 " + std::to_string(_status_code) + " " + _status_code_str +"\r\n"
 	"Date: " + getHttpDate() + "\r\n"
 	"Server: OverThirty_Webserv\r\n"
 	"Content-Type: " + content_type + "\r\n"
 	"Content-Length: " + std::to_string(_response.body.length()) + "\r\n"
 	"Cache-Control: no-cache, private\r\n";
 
-	if (_response.status_code == 301) {
+	if (_status_code == 301) {
 		_response.header += "Location: " + _response.redirect_path + "\r\n";
 	}
 
@@ -259,10 +266,10 @@ void Request::handleDelete()
 {
 	std::string	full_path;
 
-	// full_path = response.location.root + response.path;
+	// full_path = location.root + path;
 	full_path = "./www/images/directory/example.txt"; // now hardcoded, later the version above.
 
-	std::cout << "path: " << _response.path << "\nroot: " << _response.location.root << std::endl;
+	std::cout << "path: " << _path << "\nroot: " << _location.root << std::endl;
 	try {
 		if (!std::ifstream(full_path)) {
 			throw std::runtime_error("Couldn't delete unexisting file: " + full_path);
@@ -285,20 +292,20 @@ void Request::handleDelete()
 }
 
 void Request::handleGet() {
-	std::cout << "handleGet(): " << _response.path << std::endl;
-	if (_response.path == "/") {
-		createBody(_response.location.root + "/index.html");
-		if (_response.status_code == 200)
+	std::cout << "handleGet(): " << _path << std::endl;
+	if (_path == "/") {
+		createBody(_location.root + "/index.html");
+		if (_status_code == 200)
 			createHeader("text/html; charset=UTF-8");
 	}
-	else if (_response.location.autoindex == true && _response.is_directory == true) {
+	else if (_location.autoindex == true && _is_directory == true) {
 		getAutoIndex();
 	}
 	else {
-		createBody(_response.location.root + _response.path);
-		if (_response.status_code == 200) {
+		createBody(_location.root + _path);
+		if (_status_code == 200) {
 			for (auto& p : extensions) {
-				if (endsWith(_response.path, p.first)) {
+				if (endsWith(_path, p.first)) {
 					createHeader(p.second);
 					break;
 				}
@@ -309,7 +316,7 @@ void Request::handleGet() {
 
 void Request::getLocation() {
 	std::vector<LocationConfig> locations_copy = _config.locations;
-	std::string temp_path = _response.path;
+	std::string temp_path = _path;
 
 	int n = locations_copy.size(); // sort locations to find the longest match
 	for (int i = 0; i < n - 1; i++) {
@@ -324,62 +331,90 @@ void Request::getLocation() {
 		removeEndSlash(location.path);
 		if (location.path.length() <= temp_path.length()
 			&& temp_path.compare(0, location.path.length(), location.path) == 0) {
-			_response.location = location;
+			_location = location;
 			return ;
 		}
 	}
+}
+
+bool Request::methodIsNotAllowed() {
+	if (std::find(_location.methods.begin(), _location.methods.end(),
+			_method) == _location.methods.end()) {
+		return true;
+	}
+	return false;
 }
 
 void Request::validateRequest() {
-	std::string root_and_path = _response.location.root + _response.path;
+	std::string root_and_path = _location.root + _path;
 
 	// check if path/extension suggests cgi
-	// is the method allowed in config (compare response.location to config)
 
-	//check for not allowed methods
-	if (_response.method != "GET"
-		&& _response.method != "POST"
-		&& _response.method != "DELETE") {
-		_response.status_code = 405;
+	// is the method supported at all
+	if (_method != "GET"
+		&& _method != "POST"
+		&& _method != "DELETE") {
+		_status_code = 501;
 	}
 
-	// is the path a file or directory and does the directory have a trailing slash
+	// is the method allowed in config
+	else if (methodIsNotAllowed())
+		_status_code = 405;
+
+	// is the path a file or directory
 	else if (std::filesystem::is_directory(root_and_path)) {
-		_response.is_directory = true;
-		if (_response.path.back() != '/') {
-			_response.redirect_path = _response.path + '/';
-			_response.status_code = 301;
+		_is_directory = true;
+		// does the directory have a trailing slash
+		if (_path.back() != '/') {
+			_response.redirect_path = _path + '/';
+			_status_code = 301;
 			return ;
 		}
 	}
-	
+}
+
+void Request::initResponseStruct(int status_code) {
+	setStatusCode(status_code);
+	_method = _headers.find("method")->second;
+	_path = _headers.find("path")->second;
+	_version = _headers.find("version")->second;
+	getLocation();
+}
+
+void Request::printRequest() {
+	std::cout << "|  " << "Path: " << _path << std::endl;
+	std::cout << "|  " << "Method: " << _method << std::endl;
+	//std::cout << "|  " << "Version: " << response.version << std::endl;
+	std::cout << "|  " << "Status: " << _status_code << std::endl;
+	//std::cout << "|  " << "Location Path: " << location.path << std::endl;
+	//std::cout << "|  " << "Redirect Path: " << response.redirect_path << std::endl;
+	//std::cout << "|  " << "Is Directory: " << is_directory << std::endl;
+
+	for (auto i: _location.methods)
+		std::cout << "|  " << "Config Methods: " << i << std::endl;
+
+	std::cout << "|  " << "-----------------------------------" << std::endl;
 }
 
 void Request::getResponse(int status_code) {
-	_response.method = _headers.find("method")->second;
-	_response.path = _headers.find("path")->second;
-	_response.version = _headers.find("version")->second;
-	
-	getLocation();
 
-	std::cout << "|  " << "Path: " << _response.path << std::endl;
-	
-	setStatusCode(status_code);
-	if (_response.status_code == 200)
-	validateRequest();
-	std::cout << "|  " << "Validate Result: " << _response.status_code << std::endl;
+	initResponseStruct(status_code);
+
 	
 	if (_headers.at("path") == "/who.py"){
 		_is_cgi = true;
 	}
 	
-	if (_response.status_code != 200)
-		handleError(_response.status_code);
-	else if (_response.method == "GET")
+	if (_status_code == 200) {
+		validateRequest();
+		std::cout << "|  " << "Status After Validation: " << _status_code << std::endl;
+	}
+	if (_status_code != 200)
+		handleError(_status_code);
+	else if (_method == "GET")
 		handleGet();
-	else if (_response.method == "DELETE")
+	else if (_method == "DELETE")
 		handleDelete();
 	_response.full_response = _response.header + _response.body;
-
-	std::cout << "|  " << "-----------------------------------" << std::endl;
+	printRequest(); // Remove
 }

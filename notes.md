@@ -24,3 +24,8 @@ If we want to add cookies, config file needs session defined (on). For now, not 
 -----------
 * In HTTP 1.1 Connection: Keep-Alive is the default and Close is used if requested
 * Response is sent also in case of POST and DELETE (200 series codes)
+
+-----------
+26/6/2025
+-----------
+* More than one cgi extension type is bonus! we can handle ONLY python for example
