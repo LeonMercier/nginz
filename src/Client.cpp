@@ -112,6 +112,8 @@ void Client::sendTo() {
 			}
 
 			state = SEND;
+		} else {
+			return;
 		}
 	} else {
 		if (send_queue.size() < 1) {

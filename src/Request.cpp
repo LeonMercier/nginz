@@ -9,13 +9,14 @@ Request::Request(std::vector<ServerConfig> configs) : _all_configs(configs) {
 
 e_req_state	Request::addToRequest(std::string part) {
 
-	std::cout << "addToRequest()" << part <<std::endl;
+	// std::cout << "addToRequest()" << part <<std::endl;
+	std::cout << "addToRequest()" << std::endl;
 
 	_raw_request += std::string(part);
 
 	// headers will not be parsed multiple times when they have already been
 	// received
-	if (receiving_chunked) {
+	if (_receiving_chunked) {
 		e_req_state chunked_state = handleChunked(0, false);
 		if (chunked_state == RECV_MORE) {
 			return RECV_MORE;
@@ -97,21 +98,48 @@ void Request::handleCompleteRequest(int status)
 	getResponse(status);
 }
 
-// returns true when the final chunk has bee parsed
-static bool extractChunks(std::string &buf, std::vector<std::string> &chunks) {
+// returns true when the final chunk has been parsed
+static bool extractChunks(std::string &raw_request,
+						  std::vector<std::string> &chunks)
+{
 	static int left_to_read = 0;
 
 	std::string chunk;
-	std::istringstream stream(buf);
 
-	if (left_to_read == 0) {
-		stream >> std::hex >> left_to_read;
-		std::cout << "left_to_read: " << left_to_read << std::endl;
-	} else {
-		// read left_to_read bytes
+	while (true) {
+		if (left_to_read == 0) {
+			try {
+				raw_request.erase(0, raw_request.find_first_not_of("\r\n"));
+				std::string tmp = raw_request.substr(0, raw_request.find("\r\n"));
+				left_to_read = std::stoi(tmp, nullptr, 16);
+				raw_request.erase(0, tmp.length() + 2);
+				std::cout << "left_to_read: " << left_to_read << std::endl;
+			} catch (...) {
+				std::cerr << "Request::extractChunks(): failed to parse chunk"
+					"size" << std::endl;
+				// TODO: propagate error to return error page
+				return true;
+			}
+			// end of transmission is signaled by a chunk of size zero
+			if (left_to_read == 0) {
+				return true;
+			}
+		}
+		// if we found an entire chunk, then remove the \r\n
+		if (raw_request.length() > left_to_read) {
+			chunk = raw_request.substr(0, left_to_read);
+			raw_request.erase(0, left_to_read);
+			left_to_read = 0;
+		} else {
+			chunk = raw_request;
+			raw_request = "";
+		}
+		chunks.push_back(chunk);
+		// break the loop
+		if (raw_request.length() == 0) {
+			return false;
+		}
 	}
-
-	return true;
 }
 
 e_req_state Request::handleChunked(size_t header_end, bool isInitialRecv) {
@@ -120,8 +148,13 @@ e_req_state Request::handleChunked(size_t header_end, bool isInitialRecv) {
 	std::vector<std::string> chunks;
 	bool wasFinalChunk = false;
 	
-	// TODO: generate filename
+	// TODO: generate filename with utils.hpp
+	// TODO: if is initial recv check that generated filename doesnt already
+	// exist; generate new names until we get a non existent one
 	_filename_infile = "tmp_chunked";
+
+	// ios::ate => write to the end of the file
+	std::ofstream file(_filename_infile, std::ios::app);
 
 	if (isInitialRecv) {
 		_infile_fd = open(_filename_infile.c_str(), O_APPEND);
@@ -129,26 +162,28 @@ e_req_state Request::handleChunked(size_t header_end, bool isInitialRecv) {
 		_has_infile = true;
 		_raw_request.erase(0, header_end);
 	} else {
-		//append to file
-		//erase raw_request
-		//close file if done
+		std::cout << "handleChunked(): further call" << std::endl;
 	}
 	wasFinalChunk = extractChunks(_raw_request, chunks);
 	_raw_request = "";
 	for (auto it = chunks.begin(); it != chunks.end(); it++) {
 		write(_infile_fd, it->c_str(), it->length());
 	}
+
+	file.close();
 	if (wasFinalChunk) {
+		std::cout << "handleChunked(): final chunk" << std::endl;
 		// TODO: do we need to reset receiving_chunked or will the Request
 		// always be destroyed after this?
 		close(_infile_fd);
+		_receiving_chunked = false;
 		return READY;
 	} else {
 		return RECV_MORE;
 	}
 }
 
-e_req_state Request::handlePost(size_t header_end) {
+e_req_state Request::handlePost(size_t body_start) {
 	//method is not allowed in config
 	initResponseStruct(200);
 	if (methodIsNotAllowed()) {
@@ -164,9 +199,9 @@ e_req_state Request::handlePost(size_t header_end) {
 			
 			// TODO: this reads weird
 			if (!_receiving_chunked) {
-				return handleChunked(header_end, true);
+				return handleChunked(body_start, true);
 			} else {
-				return handleChunked(header_end, false);
+				return handleChunked(body_start, false);
 			}
 
 		}
@@ -201,7 +236,7 @@ e_req_state Request::handlePost(size_t header_end) {
 		return READY;
 	}
 	// happy path
-	if (_raw_request.length() >= header_end + content_length) {
+	if (_raw_request.length() >= body_start + content_length) {
 		handleCompleteRequest(200);
 		return READY;
 	} else {
