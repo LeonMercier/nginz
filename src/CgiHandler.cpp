@@ -1,22 +1,5 @@
 #include "../inc/CgiHandler.hpp"
 
-// void	CgiHandler::launchCgi(Request &request)
-// {
-// 	pid_t p = fork();
-
-// 	if (p < 0){
-// 		// fork has failed, we throw and quit the whole server gracefully
-
-// 	}
-// 	else if (p == 0){
-		
-// 		// temp_file execven outputille ja dup
-// 		// save env variables for cgi
-// 		// execve()
-// 	}
-// 	pid = p;// store pid
-// }
-
 t_cgi_state	CgiHandler::checkCgi()
 {
 	// TIME_OUT
@@ -30,6 +13,9 @@ t_cgi_state	CgiHandler::checkCgi()
 		{
 			std::cout << str << std::endl;
 		}
+		std::cout << "deleting file: " << output_filename << std::endl;
+		std::remove(output_filename.c_str());
+
 		return CGI_READY;
 	}
 	return (CGI_WAITING);
@@ -85,13 +71,6 @@ void	getCgiEnv(std::map<std::string, std::string> &headers, const ServerConfig &
 	envp.push_back(nullptr);
 }
 
-std::string	generateTempFilename()
-{
-	std::string prefix = "/tmp/cgi_tmp_";
-	static int counter = 0;
-	return (prefix + std::to_string(counter++));
-}
-
 void	CgiHandler::launchCgi(Request &request)
 {
 	std::map<std::string, std::string> headers = request.getHeaders();
@@ -100,39 +79,39 @@ void	CgiHandler::launchCgi(Request &request)
 
 	// Creating temp input and output file pointers for CGI (input for POST body, output for script's output)
 
-	std::string	input_filename = generateTempFilename();
+	// std::string	input_filename = generateTempFilename();
 	output_filename = generateTempFilename();
 
-	int	input_fd = open(input_filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
-	if (input_fd < 0){
-		// throw
-	}
+	// int	input_fd = open(input_filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
+	// if (input_fd < 0){
+	// 	// throw
+	// }
 
 	int	output_fd = open(output_filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644); // let's verify permissions later
 	if (output_fd < 0){
-		close(input_fd);
+		// close(input_fd);
 		// throw
 	}
 	
 	getCgiEnv(headers, request.getConfig(), envp, envVars);
 	// we have saved the post body into infile before
-	close(input_fd); // move file position indicator to the beginning of the file stream by closing
+	// close(input_fd); // move file position indicator to the beginning of the file stream by closing
 
 	std::cout << "\n\n\n\nCGIHANDLER\n\n\n\n";
 	int pid = fork();
 
 	if (pid < 0) {
-		close(input_fd);
+		// close(input_fd);
 		close(output_fd);
 		throw std::runtime_error("fork() failed"); // are we closing the server?
 	}
 	else if (pid == 0) {
 	
 		// redirecting input and output fds to STDIN and STDOUT for execve
-		dup2(input_fd, STDIN_FILENO);
+		// dup2(input_fd, STDIN_FILENO);
 		dup2(output_fd, STDOUT_FILENO);
 
-		close(input_fd);
+		// close(input_fd);
 		close(output_fd);
 
 		char* argv[] = {
