@@ -104,6 +104,8 @@ void Client::sendTo() {
 			try {
 				t_rsp tmp{};
 				tmp.response.full_response = fileToString(cgi.output_filename);
+				std::cout << "deleting file: " << cgi.output_filename << std::endl;
+				std::remove(cgi.output_filename.c_str());
 				send_queue.push_back(tmp);
 			} catch (const std::ios_base::failure& e){
 				// TODO how to handle error from client?

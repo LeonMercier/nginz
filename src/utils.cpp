@@ -33,5 +33,6 @@ std::string fileToString(std::string filename) {
     }
 	std::ostringstream sbody;
 	sbody << file.rdbuf();
+	file.close();
 	return sbody.str();
 }
