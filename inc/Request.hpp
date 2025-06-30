@@ -4,8 +4,6 @@
 #include "StandardLibraries.hpp"
 #include "Structs.hpp"
 #include "Webserv.hpp"
-#include <fstream>
-
 
 const std::map<std::string, std::string> extensions {
 	{".aac", "audio/aac"},
