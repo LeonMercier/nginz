@@ -468,6 +468,12 @@ void Request::validateRequest() {
 	else if (methodIsNotAllowed())
 		_status_code = 405;
 
+	//is the location return code 301
+	else if (_location.return_code == 301) {
+		_response.redirect_path = _location.return_url;
+		_status_code = 301;
+	}
+
 	// is the path a file or directory
 	else if (std::filesystem::is_directory(_location.root + _path)) {
 		_is_directory = true;
