@@ -5,7 +5,6 @@
 #include "Structs.hpp"
 #include "Webserv.hpp"
 
-
 const std::map<std::string, std::string> extensions {
 	{".aac", "audio/aac"},
 	{".bmp", "image/bmp"},
@@ -116,6 +115,7 @@ public:
 	void								initResponseStruct(int status_code);
 	bool								methodIsNotAllowed();
 	void 								printRequest(); //Remove
+	e_req_state 						handleChunked(size_t header_end);
 
 	//Getters
 	Response							getRes();
@@ -125,8 +125,6 @@ public:
 	LocationConfig 						getLocation();
 
 	bool								getIsCgi();
-
-	e_req_state							state;
 
 private:
 	std::vector<ServerConfig>			_all_configs;
@@ -145,4 +143,8 @@ private:
 
 	int									_status_code = 200;
 	std::string							_status_code_str = "OK";
+
+	std::string							_tmp_filename_infile;
+	bool								_has_tmp_infile = false;
+	bool								_receiving_chunked = false;
 };	

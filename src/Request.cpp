@@ -9,9 +9,20 @@ Request::Request(std::vector<ServerConfig> configs) : _all_configs(configs) {
 
 e_req_state	Request::addToRequest(std::string part) {
 
-	std::cout << "addToRequest()" << part <<std::endl;
+	// std::cout << "addToRequest()" << std::endl;
+	// std::cout << part << std::endl;
 
 	_raw_request += std::string(part);
+
+	// headers will not be parsed multiple times when they have already been
+	// received
+	if (_receiving_chunked) {
+		if (handleChunked(0) == RECV_MORE) {
+			return RECV_MORE;
+		}
+		handleCompleteRequest(200);
+		return READY;
+	}
 
 	if (headerIsComplete()) {
 		size_t body_start =
@@ -36,7 +47,12 @@ e_req_state	Request::addToRequest(std::string part) {
 			return READY;
 		}
 		else if (method->second == "POST") {
-			return handlePost(body_start);
+			if (handlePost(body_start) == READY) {
+				handleCompleteRequest(200);
+				return READY;
+			} else {
+				return RECV_MORE;
+			}
 		}
 		else {
 			std::cerr << "Request::addToRequest(): unknown method" << std::endl;
@@ -86,7 +102,92 @@ void Request::handleCompleteRequest(int status)
 	getResponse(status);
 }
 
-e_req_state Request::handlePost(size_t header_end) {
+// returns true when the final chunk has been parsed
+static bool extractChunks(std::string &raw_request,
+						  std::vector<std::string> &chunks)
+{
+	static size_t left_to_read = 0;
+	std::string chunk;
+
+	while (raw_request.length() > 0) {
+		if (left_to_read == 0) {
+			try {
+				raw_request.erase(0, raw_request.find_first_not_of("\r\n"));
+				std::string tmp = raw_request.substr(0, raw_request.find("\r\n"));
+				left_to_read = std::stoi(tmp, nullptr, 16);
+				raw_request.erase(0, tmp.length() + 2);
+				// std::cout << "left_to_read: " << left_to_read << std::endl;
+			} catch (...) {
+				std::cerr << "Request::extractChunks(): failed to parse chunk"
+					"size" << std::endl;
+				// TODO: propagate error to return error page
+				return true;
+			}
+			// end of transmission is signaled by a chunk of size zero
+			if (left_to_read == 0) {
+				return true;
+			}
+		}
+		// found an entire chunk
+		if (raw_request.length() >= left_to_read) {
+			chunk = raw_request.substr(0, left_to_read);
+			raw_request.erase(0, left_to_read);
+			left_to_read = 0;
+			chunks.push_back(chunk);
+		} else {
+			// raw_request contains an incomplete chunk; need to recv more
+			return false;
+		}
+	}
+	return false;
+}
+
+e_req_state Request::handleChunked(size_t header_end) {
+	 // std::cout << "handleChunked(): " << std::endl;
+
+	std::vector<std::string> chunks;
+	bool wasFinalChunk = false;
+	
+	// TODO: check that generated filename doesnt already
+	// exist; generate new names until we get a non existent one
+	if (!_receiving_chunked) {
+		_tmp_filename_infile = generateTempFilename();
+	}
+
+	// ios::app => write to the end of the file
+	std::ofstream file(_tmp_filename_infile, std::ios::binary | std::ios::app);
+
+	// this is the initial call to this function
+	if (!_receiving_chunked) {
+		// std::cout << "handleChunked(): initial call" << _raw_request << std::endl;
+		_receiving_chunked = true;
+		_has_tmp_infile = true;
+		_raw_request.erase(0, header_end);
+		if (_raw_request.empty()) {
+			// first recv() only contained a header
+			return RECV_MORE;
+		}
+	} else {
+		// std::cout << "handleChunked(): further call" << std::endl;
+	}
+	wasFinalChunk = extractChunks(_raw_request, chunks);
+	for (auto it = chunks.begin(); it != chunks.end(); it++) {
+		file << *it;
+	}
+
+	file.close();
+	if (wasFinalChunk) {
+		// std::cout << "handleChunked(): final chunk" << std::endl;
+		// TODO: do we need to reset receiving_chunked or will the Request
+		// always be destroyed after this?
+		_receiving_chunked = false;
+		return READY;
+	} else {
+		return RECV_MORE;
+	}
+}
+
+e_req_state Request::handlePost(size_t body_start) {
 	//method is not allowed in config
 	initResponseStruct(200);
 	if (methodIsNotAllowed()) {
@@ -96,10 +197,9 @@ e_req_state Request::handlePost(size_t header_end) {
 
 	// if there is transfer-encoding, then content-length can be ignored
 	if (_headers.find("transfer-encoding") != _headers.end()) {
-		if (_headers.at("transfer-encoding") == "chunked\r") {
-			std::cout << "receiving chunked transfer" << std::endl;
-			// TODO: implement checks for chunked transfer xD
-			return RECV_MORE;
+		if (_headers.at("transfer-encoding") == "chunked") {
+			// std::cout << "receiving chunked transfer" << std::endl;
+			return handleChunked(body_start);
 		}
 		// header has transfer-encoding but it is not set to chunked =>
 		// we proceed to look for content-length
@@ -131,9 +231,8 @@ e_req_state Request::handlePost(size_t header_end) {
 		handleCompleteRequest(413);
 		return READY;
 	}
-
 	// happy path
-	if (_raw_request.length() >= header_end + content_length) {
+	if (_raw_request.length() >= body_start + content_length) {
 		handleCompleteRequest(200);
 		return READY;
 	} else {
@@ -300,7 +399,6 @@ void Request::handleDelete()
 }
 
 void Request::handleGet() {
-	std::cout << "handleGet(): " << _path << std::endl;
 	if (_path == "/") {
 		createBody(_location.root + "/index.html");
 		if (_status_code == 200)
