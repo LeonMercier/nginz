@@ -128,8 +128,6 @@ public:
 
 	bool								getIsCgi();
 
-	e_req_state							state;
-
 private:
 	std::vector<ServerConfig>			_all_configs;
 	ServerConfig						_config;

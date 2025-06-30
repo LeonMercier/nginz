@@ -106,7 +106,7 @@ void Request::handleCompleteRequest(int status)
 static bool extractChunks(std::string &raw_request,
 						  std::vector<std::string> &chunks)
 {
-	static int left_to_read = 0;
+	static size_t left_to_read = 0;
 	std::string chunk;
 
 	while (raw_request.length() > 0) {
