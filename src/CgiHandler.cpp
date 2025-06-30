@@ -31,7 +31,7 @@ void	getCgiEnv(Request &request, const ServerConfig &config, std::vector<char*> 
 	std::string method = "REQUEST_METHOD=";
 	std::string	scriptFileName = "SCRIPT_FILENAME=";
 	std::string pathInfo = "PATH_INFO=";
-	std::string scriptName = "SCRIPT_NAME=" + request.getLocationConfig().root;
+	std::string scriptName = "SCRIPT_NAME=" + request.getLocation().root;
 	std::string	serverPort = "SERVER_PORT=" + std::to_string(config.listen_port);
 	std::string serverName = "SERVER_NAME=" + config.server_names[0]; // or should we just put IP here? we might have multiple names I'm confutse
 	std::string remoteAddr = "REMOTE_ADDR=" + config.listen_ip; // "The IP address of remote host", should this really be us?
@@ -112,8 +112,8 @@ void	CgiHandler::launchCgi(Request &request)
 	// we have saved the post body into infile before
 	// close(input_fd); // move file position indicator to the beginning of the file stream by closing
 
-	std::string	executable = request.getLocationConfig().cgi_path_py;
-	std::string	script = request.getLocationConfig().root + request.getPath();
+	std::string	executable = request.getLocation().cgi_path_py;
+	std::string	script = request.getLocation().root + request.getPath();
 
 	std::cout << "\n\nCGI_PATH: " << executable << "\n\nrequest.path: " << request.getPath() << "\n\nSCRIPT_PATH: " << script << std::endl;
 

@@ -103,7 +103,8 @@ public:
 	int									getPostContentLength (std::string request);
 	//bool								isPostAllowed(std::string path, ServerConfig config);
 	void								validateRequest();
-	void								getLocation();
+	void								checkLocation();
+	void								handleCgi();
 	void 								handleGet();
 	void 								handleDelete();
 	void								createBody(std::string filename);
@@ -121,7 +122,7 @@ public:
 	ServerConfig						getConfig();
 	std::map<std::string, std::string>	getHeaders();
 	std::string							getPath();
-	LocationConfig 						getLocationConfig();
+	LocationConfig 						getLocation();
 
 	bool								getIsCgi();
 
