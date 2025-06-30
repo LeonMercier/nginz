@@ -352,10 +352,13 @@ bool Request::methodIsNotAllowed() {
 void Request::validateRequest() {
 	std::string root_and_path = _location.root + _path;
 
-	// check if path/extension suggests cgi
+	// is it http version 1.1
+	if (_version != "HTTP/1.1") {
+		_status_code = 505;
+	}
 
 	// is the method supported at all
-	if (_method != "GET"
+	else if (_method != "GET"
 		&& _method != "POST"
 		&& _method != "DELETE") {
 		_status_code = 501;
@@ -388,7 +391,7 @@ void Request::initResponseStruct(int status_code) {
 void Request::printRequest() {
 	std::cout << "|  " << "Path: " << _path << std::endl;
 	std::cout << "|  " << "Method: " << _method << std::endl;
-	//std::cout << "|  " << "Version: " << response.version << std::endl;
+	std::cout << "|  " << "Version: " << _version << std::endl;
 	std::cout << "|  " << "Status: " << _status_code << std::endl;
 	//std::cout << "|  " << "Location Path: " << location.path << std::endl;
 	//std::cout << "|  " << "Redirect Path: " << response.redirect_path << std::endl;
@@ -403,18 +406,16 @@ void Request::printRequest() {
 void Request::getResponse(int status_code) {
 
 	initResponseStruct(status_code);
-
-	
-	if (_headers.at("path") == "/who.py"){
-		_is_cgi = true;
-	}
-	
 	if (_status_code == 200) {
 		validateRequest();
 		std::cout << "|  " << "Status After Validation: " << _status_code << std::endl;
 	}
 	if (_status_code != 200)
 		handleError(_status_code);
+
+	if (_headers.at("path") == "/who.py"){
+		_is_cgi = true;
+	}
 	else if (_method == "GET")
 		handleGet();
 	else if (_method == "DELETE")

@@ -13,8 +13,6 @@ t_cgi_state	CgiHandler::checkCgi()
 		{
 			std::cout << str << std::endl;
 		}
-		std::cout << "deleting file: " << output_filename << std::endl;
-		std::remove(output_filename.c_str());
 
 		return CGI_READY;
 	}
