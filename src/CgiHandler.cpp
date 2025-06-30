@@ -112,6 +112,17 @@ void	CgiHandler::launchCgi(Request &request)
 	// we have saved the post body into infile before
 	// close(input_fd); // move file position indicator to the beginning of the file stream by closing
 
+	std::string	executable = request.getLocationConfig().cgi_path_py;
+	std::string	script = request.getLocationConfig().root + request.getPath();
+
+	std::cout << "\n\nCGI_PATH: " << executable << "\n\nrequest.path: " << request.getPath() << "\n\nSCRIPT_PATH: " << script << std::endl;
+
+	char *argv[] = {
+		(char*)executable.c_str(),
+		(char*)script.c_str(),
+		nullptr
+	};
+
 	std::cout << "\n\n\n\nCGIHANDLER\n\n\n\n";
 	int pid = fork();
 
@@ -128,12 +139,6 @@ void	CgiHandler::launchCgi(Request &request)
 
 		// close(input_fd);
 		close(output_fd);
-
-		char* argv[] = {
-			(char*)"/usr/bin/python3", // absolute path to the interpreter (we get it from the location) // (char *)request.path.to_str();
-			(char*)"./www/who.py", // hardcoded now // request.root + request.path // (char *)(request.root + request.path).to_str();
-			nullptr
-		};
 		execve(argv[0], argv, envp.data());
 		// throw something ?
 	}
