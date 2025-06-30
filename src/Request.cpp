@@ -103,10 +103,9 @@ static bool extractChunks(std::string &raw_request,
 						  std::vector<std::string> &chunks)
 {
 	static int left_to_read = 0;
-
 	std::string chunk;
 
-	while (true) {
+	while (raw_request.length() > 0) {
 		if (left_to_read == 0) {
 			try {
 				raw_request.erase(0, raw_request.find_first_not_of("\r\n"));
@@ -126,24 +125,21 @@ static bool extractChunks(std::string &raw_request,
 			}
 		}
 		// if we found an entire chunk, then remove the \r\n
-		if (raw_request.length() > left_to_read) {
+		if (raw_request.length() >= left_to_read) {
 			chunk = raw_request.substr(0, left_to_read);
 			raw_request.erase(0, left_to_read);
 			left_to_read = 0;
+			chunks.push_back(chunk);
 		} else {
-			chunk = raw_request;
-			raw_request = "";
-		}
-		chunks.push_back(chunk);
-		// break the loop
-		if (raw_request.length() == 0) {
+			// raw_request contains an incomplete chunk
 			return false;
 		}
 	}
+	return false;
 }
 
 e_req_state Request::handleChunked(size_t header_end, bool isInitialRecv) {
-	std::cout << "handleChunked(): " << _raw_request << std::endl;
+	 // std::cout << "handleChunked(): " << raw_request << std::endl;
 
 	std::vector<std::string> chunks;
 	bool wasFinalChunk = false;
@@ -153,21 +149,25 @@ e_req_state Request::handleChunked(size_t header_end, bool isInitialRecv) {
 	// exist; generate new names until we get a non existent one
 	_filename_infile = "tmp_chunked";
 
-	// ios::ate => write to the end of the file
-	std::ofstream file(_filename_infile, std::ios::app);
+	// ios::app => write to the end of the file
+	std::ofstream file(_filename_infile, std::ios::binary | std::ios::app);
 
 	if (isInitialRecv) {
-		_infile_fd = open(_filename_infile.c_str(), O_APPEND);
+		std::cout << "handleChunked(): initial call" << _raw_request << std::endl;
 		_receiving_chunked = true;
 		_has_infile = true;
 		_raw_request.erase(0, header_end);
+		if (_raw_request.empty()) {
+			// first recv() only contained a header
+			return RECV_MORE;
+		}
 	} else {
 		std::cout << "handleChunked(): further call" << std::endl;
 	}
 	wasFinalChunk = extractChunks(_raw_request, chunks);
 	_raw_request = "";
 	for (auto it = chunks.begin(); it != chunks.end(); it++) {
-		write(_infile_fd, it->c_str(), it->length());
+		file << *it;
 	}
 
 	file.close();
