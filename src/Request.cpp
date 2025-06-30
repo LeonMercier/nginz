@@ -167,6 +167,10 @@ std::map<std::string, std::string>	Request::getHeaders() {
 	return _headers;
 }
 
+std::string		Request::getPath(){
+	return _path;
+}
+
 bool			Request::getIsCgi() {
 	return _is_cgi;
 }

@@ -272,6 +272,23 @@ void	validateAndParseRedirect(std::istringstream &iss, LocationConfig &location)
 	location.return_url = url;
 }
 
+void	validateAndParseCgiPython(std::istringstream &iss, LocationConfig &location)
+{
+	std::string	cgi_path;
+
+	iss >> cgi_path;
+	if (cgi_path.find(';') != cgi_path.size() - 1)
+	{
+		throw std::runtime_error("config file:\nlocation " + location.path + " cgi_path statement not ending with ';'");
+	}
+	cgi_path.pop_back();
+	if (iss >> cgi_path)
+	{
+		throw std::runtime_error("config file:\nlocation " + location.path + " upload_store contains excessive info after ;");
+	}
+	location.cgi_path_py = cgi_path;
+}
+
 LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::vector<std::string>::iterator &it, std::istringstream &iss)
 {
 	LocationConfig	location;
@@ -309,6 +326,10 @@ LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::vector
 		else if (key == "return")
 		{
 			validateAndParseRedirect(iss, location);
+		}
+		else if (key == "cgi_path_py")
+		{
+			validateAndParseCgiPython(iss, location);
 		}
 		else if (key == "}")
 		{

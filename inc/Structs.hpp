@@ -12,7 +12,7 @@ struct LocationConfig
 	std::string	upload_store; // not sure if a good name
 	int			return_code = 0;
 	std::string return_url = "";
-	// stuff for the cgi later cause no idea yet
+	std::string	cgi_path_py = "";
 };
 
 struct ServerConfig
