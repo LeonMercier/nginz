@@ -150,7 +150,7 @@ bool Request::headerIsComplete() {
 	return false;
 }
 
-LocationConfig 	Request::getLocationConfig()
+LocationConfig 	Request::getLocation()
 {
 	return _location;
 }
@@ -322,7 +322,7 @@ void Request::handleGet() {
 	}
 }
 
-void Request::getLocation() {
+void Request::checkLocation() {
 	std::vector<LocationConfig> locations_copy = _config.locations;
 	std::string temp_path = _path;
 
@@ -354,14 +354,12 @@ bool Request::methodIsNotAllowed() {
 }
 
 void Request::validateRequest() {
-	std::string root_and_path = _location.root + _path;
-
 	// is it http version 1.1
 	if (_version != "HTTP/1.1") {
 		_status_code = 505;
 	}
 
-	// is the method supported at all
+	// is the method supported by our server
 	else if (_method != "GET"
 		&& _method != "POST"
 		&& _method != "DELETE") {
@@ -373,13 +371,12 @@ void Request::validateRequest() {
 		_status_code = 405;
 
 	// is the path a file or directory
-	else if (std::filesystem::is_directory(root_and_path)) {
+	else if (std::filesystem::is_directory(_location.root + _path)) {
 		_is_directory = true;
-		// does the directory have a trailing slash
+		// check for redirect error
 		if (_path.back() != '/') {
 			_response.redirect_path = _path + '/';
 			_status_code = 301;
-			return ;
 		}
 	}
 }
@@ -389,7 +386,7 @@ void Request::initResponseStruct(int status_code) {
 	_method = _headers.find("method")->second;
 	_path = _headers.find("path")->second;
 	_version = _headers.find("version")->second;
-	getLocation();
+	checkLocation();
 }
 
 void Request::printRequest() {
@@ -407,6 +404,13 @@ void Request::printRequest() {
 	std::cout << "|  " << "-----------------------------------" << std::endl;
 }
 
+void Request::handleCgi() {
+	if (_location.cgi_path_py != "/usr/bin/python3")
+		handleError(400);
+	else
+		_is_cgi = true;
+}
+
 void Request::getResponse(int status_code) {
 
 	initResponseStruct(status_code);
@@ -414,11 +418,11 @@ void Request::getResponse(int status_code) {
 		validateRequest();
 		std::cout << "|  " << "Status After Validation: " << _status_code << std::endl;
 	}
+
 	if (_status_code != 200)
 		handleError(_status_code);
-
-	if (_headers.at("path") == "/who.py"){
-		_is_cgi = true;
+	else if (endsWith(_path, ".py")){
+		handleCgi();
 	}
 	else if (_method == "GET")
 		handleGet();
