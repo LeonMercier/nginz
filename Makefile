@@ -14,42 +14,50 @@ FCLEANED		= echo "🧼 $(CYAN_BOLD)Successfully cleaned all executable files!$(R
 REMAKE			= echo "💡 $(GREEN)Successfully rebuilt everything!$(RESET)"
 WEBSERV			= echo "🔗 $(YELLOW)Linking webserv...$(RESET)"
 
+COUNT_FILE := .compile_count.tmp
+
 NAME = webserv
-CPPFLAGS = -std=c++17 #-Wall -Werror -Wextra -g
+CPPFLAGS = -std=c++17 -Wall -Werror -Wextra -g
 CPP = c++
 SOURCES = src/main.cpp \
+			src/autoindex.cpp \
+			src/CgiHandler.cpp \
 			src/Client.cpp \
 			src/ConfigParser.cpp \
 			src/event_loop.cpp \
-			src/autoindex.cpp \
 			src/parse_header.cpp \
 			src/Request.cpp \
-			src/CgiHandler.cpp \
 			src/utils.cpp
 			
+TOTAL := $(words $(SOURCES))
 HEADERS = inc/Client.hpp inc/event_loop.hpp \
 		  inc/Request.hpp inc/CgiHandler.hpp \
 		  inc/utils.hpp
 
 SRCDIR = src
 OBJDIR = obj
-OBJS = $(SOURCES:%.c=$(OBJDIR)/%.o)
+OBJS = $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 
 all: $(NAME)
 
 
 $(NAME): $(OBJS) $(HEADERS)
-	@$(CUB3D)
+	@$(OBJ_READY)
 	@$(CPP) $(CPPFLAGS) $(OBJS) -o $(NAME)
 	@$(X_READY)
+	@rm -f $(COUNT_FILE)
+
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c $(HEADERS) | $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS) | $(OBJDIR)
 	@mkdir -p $(dir $@)
-	@$(CPP) $(CFLAGS) -c $< -o $@
-	@$(OBJ_READY)
+	@$(CPP) $(CPPFLAGS) -c $< -o $@
+	@count=$$(cat $(COUNT_FILE) 2>/dev/null || echo 0); \
+	count=$$((count + 1)); \
+	echo $$count > $(COUNT_FILE); \
+	echo "📥 $(ORANGE)Compiled $$count/$(TOTAL) .o files!$(RESET)"
 
 
 clean:
