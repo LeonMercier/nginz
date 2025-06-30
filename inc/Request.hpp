@@ -116,8 +116,7 @@ public:
 	void								initResponseStruct(int status_code);
 	bool								methodIsNotAllowed();
 	void 								printRequest(); //Remove
-	e_req_state 						handleChunked(size_t header_end,
-								 			bool isInitialRecv);
+	e_req_state 						handleChunked(size_t header_end);
 
 	//Getters
 	Response							getRes();
@@ -147,8 +146,7 @@ private:
 	int									_status_code = 200;
 	std::string							_status_code_str = "OK";
 
-	std::string							_filename_infile;
-	int									_infile_fd;
-	bool								_has_infile;
-	bool								_receiving_chunked;
+	std::string							_tmp_filename_infile;
+	bool								_has_tmp_infile = false;
+	bool								_receiving_chunked = false;
 };	
