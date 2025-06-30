@@ -1,6 +1,14 @@
 #include "../inc/Request.hpp"
 #include "../inc/utils.hpp"
 
+
+
+
+
+
+
+
+
 const static std::string header_terminator = "\r\n\r\n";
 
 Request::Request(std::vector<ServerConfig> configs) : _all_configs(configs) {
@@ -9,15 +17,15 @@ Request::Request(std::vector<ServerConfig> configs) : _all_configs(configs) {
 
 e_req_state	Request::addToRequest(std::string part) {
 
-	// std::cout << "addToRequest()" << part <<std::endl;
-	std::cout << "addToRequest()" << std::endl;
+	// std::cout << "addToRequest()" << std::endl;
+	// std::cout << part << std::endl;
 
 	_raw_request += std::string(part);
 
 	// headers will not be parsed multiple times when they have already been
 	// received
 	if (_receiving_chunked) {
-		e_req_state chunked_state = handleChunked(0, false);
+		e_req_state chunked_state = handleChunked(0);
 		if (chunked_state == RECV_MORE) {
 			return RECV_MORE;
 		}
@@ -121,6 +129,7 @@ static bool extractChunks(std::string &raw_request,
 			}
 			// end of transmission is signaled by a chunk of size zero
 			if (left_to_read == 0) {
+				std::cout << "extractChunks(): incomplete chunk" << std::endl;
 				return true;
 			}
 		}
@@ -130,52 +139,55 @@ static bool extractChunks(std::string &raw_request,
 			raw_request.erase(0, left_to_read);
 			left_to_read = 0;
 			chunks.push_back(chunk);
+			std::cout << "good chunk" << std::endl;
 		} else {
 			// raw_request contains an incomplete chunk
+			std::cout << "incomplete chunk" << std::endl;
 			return false;
 		}
 	}
+	std::cout << "fall out of while" << std::endl;
 	return false;
 }
 
-e_req_state Request::handleChunked(size_t header_end, bool isInitialRecv) {
-	 // std::cout << "handleChunked(): " << raw_request << std::endl;
+e_req_state Request::handleChunked(size_t header_end) {
+	 // std::cout << "handleChunked(): " << std::endl;
 
 	std::vector<std::string> chunks;
 	bool wasFinalChunk = false;
 	
-	// TODO: generate filename with utils.hpp
-	// TODO: if is initial recv check that generated filename doesnt already
+	// TODO: check that generated filename doesnt already
 	// exist; generate new names until we get a non existent one
-	_filename_infile = "tmp_chunked";
+	if (!_receiving_chunked) {
+		_tmp_filename_infile = generateTempFilename();
+	}
 
 	// ios::app => write to the end of the file
-	std::ofstream file(_filename_infile, std::ios::binary | std::ios::app);
+	std::ofstream file(_tmp_filename_infile, std::ios::binary | std::ios::app);
 
-	if (isInitialRecv) {
-		std::cout << "handleChunked(): initial call" << _raw_request << std::endl;
+	// this is the initial call to this function
+	if (!_receiving_chunked) {
+		// std::cout << "handleChunked(): initial call" << _raw_request << std::endl;
 		_receiving_chunked = true;
-		_has_infile = true;
+		_has_tmp_infile = true;
 		_raw_request.erase(0, header_end);
 		if (_raw_request.empty()) {
 			// first recv() only contained a header
 			return RECV_MORE;
 		}
 	} else {
-		std::cout << "handleChunked(): further call" << std::endl;
+		// std::cout << "handleChunked(): further call" << std::endl;
 	}
 	wasFinalChunk = extractChunks(_raw_request, chunks);
-	_raw_request = "";
 	for (auto it = chunks.begin(); it != chunks.end(); it++) {
 		file << *it;
 	}
 
 	file.close();
 	if (wasFinalChunk) {
-		std::cout << "handleChunked(): final chunk" << std::endl;
+		// std::cout << "handleChunked(): final chunk" << std::endl;
 		// TODO: do we need to reset receiving_chunked or will the Request
 		// always be destroyed after this?
-		close(_infile_fd);
 		_receiving_chunked = false;
 		return READY;
 	} else {
@@ -194,16 +206,8 @@ e_req_state Request::handlePost(size_t body_start) {
 	// if there is transfer-encoding, then content-length can be ignored
 	if (_headers.find("transfer-encoding") != _headers.end()) {
 		if (_headers.at("transfer-encoding") == "chunked") {
-
-			std::cout << "receiving chunked transfer" << std::endl;
-			
-			// TODO: this reads weird
-			if (!_receiving_chunked) {
-				return handleChunked(body_start, true);
-			} else {
-				return handleChunked(body_start, false);
-			}
-
+			// std::cout << "receiving chunked transfer" << std::endl;
+			return handleChunked(body_start);
 		}
 		// header has transfer-encoding but it is not set to chunked =>
 		// we proceed to look for content-length
