@@ -1,14 +1,6 @@
 #include "../inc/Request.hpp"
 #include "../inc/utils.hpp"
 
-
-
-
-
-
-
-
-
 const static std::string header_terminator = "\r\n\r\n";
 
 Request::Request(std::vector<ServerConfig> configs) : _all_configs(configs) {
@@ -25,8 +17,7 @@ e_req_state	Request::addToRequest(std::string part) {
 	// headers will not be parsed multiple times when they have already been
 	// received
 	if (_receiving_chunked) {
-		e_req_state chunked_state = handleChunked(0);
-		if (chunked_state == RECV_MORE) {
+		if (handleChunked(0) == RECV_MORE) {
 			return RECV_MORE;
 		}
 		handleCompleteRequest(200);
@@ -56,7 +47,12 @@ e_req_state	Request::addToRequest(std::string part) {
 			return READY;
 		}
 		else if (method->second == "POST") {
-			return handlePost(body_start);
+			if (handlePost(body_start) == READY) {
+				handleCompleteRequest(200);
+				return READY;
+			} else {
+				return RECV_MORE;
+			}
 		}
 		else {
 			std::cerr << "Request::addToRequest(): unknown method" << std::endl;
@@ -120,7 +116,7 @@ static bool extractChunks(std::string &raw_request,
 				std::string tmp = raw_request.substr(0, raw_request.find("\r\n"));
 				left_to_read = std::stoi(tmp, nullptr, 16);
 				raw_request.erase(0, tmp.length() + 2);
-				std::cout << "left_to_read: " << left_to_read << std::endl;
+				// std::cout << "left_to_read: " << left_to_read << std::endl;
 			} catch (...) {
 				std::cerr << "Request::extractChunks(): failed to parse chunk"
 					"size" << std::endl;
@@ -129,24 +125,20 @@ static bool extractChunks(std::string &raw_request,
 			}
 			// end of transmission is signaled by a chunk of size zero
 			if (left_to_read == 0) {
-				std::cout << "extractChunks(): incomplete chunk" << std::endl;
 				return true;
 			}
 		}
-		// if we found an entire chunk, then remove the \r\n
+		// found an entire chunk
 		if (raw_request.length() >= left_to_read) {
 			chunk = raw_request.substr(0, left_to_read);
 			raw_request.erase(0, left_to_read);
 			left_to_read = 0;
 			chunks.push_back(chunk);
-			std::cout << "good chunk" << std::endl;
 		} else {
-			// raw_request contains an incomplete chunk
-			std::cout << "incomplete chunk" << std::endl;
+			// raw_request contains an incomplete chunk; need to recv more
 			return false;
 		}
 	}
-	std::cout << "fall out of while" << std::endl;
 	return false;
 }
 
