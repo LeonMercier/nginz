@@ -395,7 +395,6 @@ void Request::handleDelete()
 }
 
 void Request::handleGet() {
-	std::cout << "handleGet(): " << _path << std::endl;
 	if (_path == "/") {
 		createBody(_location.root + "/index.html");
 		if (_status_code == 200)
