@@ -580,6 +580,9 @@ void Request::getResponse(int status_code) {
 		validateRequest();
 		std::cout << "|  " << "Status After Validation: " << _status_code << std::endl;
 	}
+	std::cout << "Current time is: " << std::time(nullptr) << "\n\n";
+	sleep(5);
+	std::cout << "Time after sleep(5) is: " << std::time(nullptr) << "\n\n";
 
 	if (_status_code != 200) 
 		handleError(_status_code);

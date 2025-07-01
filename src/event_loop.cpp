@@ -101,6 +101,9 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 
 	while (true)
 	{
+		// go through Clients' timestamps (updated )
+		
+
 		int ready = epoll_wait(epoll_fd, events, 64, -1);
 		if (ready < 0) { throw std::runtime_error("epoll_wait() failed"); };
 		if (ready == 0)
@@ -146,6 +149,8 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 			}
 			else // existing connection
 			{
+				clients.at(curr_event_fd).updateLastEvent();
+
 				// std::cout << "receiving: socket: " << socket_fd;
 				//std::cout << " client fd: " << curr_event_fd << std::endl;
 

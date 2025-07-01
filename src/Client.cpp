@@ -41,6 +41,12 @@ void Client::closeConnection(int epoll_fd, int client_fd) {
 	state = DISCONNECT;
 }
 
+void	Client::updateLastEvent()
+{
+	_last_event = std::time(nullptr);
+	std::cout << "Client[" << fd << "] latest event: " << std::asctime(std::localtime(&_last_event)) << std::endl;
+}
+
 // TODO: incomplete header -> timeout
 void Client::recvFrom() {
 	//std::cout << "entered recvFrom" << std::endl;

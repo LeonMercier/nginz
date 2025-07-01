@@ -40,7 +40,7 @@ const std::map<int, std::string> errorCodes {
 	{403, "Forbidden"}, 				//Understood the request but refused to fulfill it
 	{404, "Not Found"}, 				//Request was not found either temporarily or permantly
 	{405, "Method Not Allowed"}, 		//Method is known but not supported
-	{408, "Client Timeout"}, 			//Did not receive the request in the time allowed to wait
+	{408, "Request Timeout"}, 			//Did not receive the request in the time allowed to wait
 	{411, "Length Required"}, 			//Missing content length for a body in a request
 	{413, "Content Too Large"}, 		//Request content is too large. Terminate request or close connection
 	{414, "URI Too Long"}, 				//It's just tooooooo long

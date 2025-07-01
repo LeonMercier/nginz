@@ -38,6 +38,7 @@ public:
 	void			closeConnection(int epoll_fd, int client_fd);
 	void			recvFrom();
 	void			sendTo();
+	void			updateLastEvent();
 
 
 private:
@@ -47,4 +48,5 @@ private:
 	t_client_state				state;
 	std::vector<t_rsp>			send_queue;
 	Request 					request;
+	time_t						_last_event;
 };
