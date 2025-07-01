@@ -67,8 +67,8 @@ void Client::recvFrom() {
 	// std::cout << std::string(buf, bytes_read) << std::endl;
 	// std::cout << "###" << std::endl;
 
-	e_req_state status = request.addToRequest(std::string(buf, bytes_read));
-	if (status == READY) {
+	request.addToRequest(std::string(buf, bytes_read));
+	if (request.getState() == READY) {
 		if (request.getIsCgi()) {
 			state = WAIT_CGI;
 			cgi.launchCgi(request);

@@ -4,6 +4,7 @@
 #include "StandardLibraries.hpp"
 #include "Structs.hpp"
 #include "Webserv.hpp"
+#include "PostFile.hpp"
 
 const std::map<std::string, std::string> extensions {
 	{".aac", "audio/aac"},
@@ -66,6 +67,7 @@ const std::map<int, std::string> errorHttps {
 };
 
 typedef enum {
+	INITIAL_RECV,
 	RECV_MORE,
 	READY
 } e_req_state;
@@ -85,7 +87,7 @@ public:
 	// RECV_MORE: we still need to receive more data before forming a response.
 	// The Client will attempt to receive more data end the call this function 
 	// again.
-	e_req_state							addToRequest(std::string part);
+	void							addToRequest(std::string part);
 
 	// sets config to the one from all_configs that matches
 	// the request host field
@@ -94,8 +96,8 @@ public:
 	// GET calls this directly
 	void 								handleCompleteRequest(int status);
 
-	// check if body is received and then call handleCompleteRequest()
-	e_req_state handlePost(size_t body_start);
+	void								initialPost();
+	void								handlePost();
 
 	bool								headerIsComplete();
 	void								getResponse(int status_code);
@@ -105,6 +107,7 @@ public:
 	void								checkLocation();
 	void								handleCgi();
 	void 								handleGet();
+	void								respondPost();
 	void 								handleDelete();
 	void								createBody(std::string filename);
 	void 								createHeader(std::string content_type);
@@ -115,7 +118,8 @@ public:
 	void								initResponseStruct(int status_code);
 	bool								methodIsNotAllowed();
 	void 								printRequest(); //Remove
-	e_req_state 						handleChunked(size_t header_end);
+	void		 						handleChunked();
+	void								separateMultipart();
 
 	//Getters
 	Response							getRes();
@@ -125,6 +129,8 @@ public:
 	LocationConfig 						getLocation();
 
 	bool								getIsCgi();
+
+	e_req_state							getState();
 
 private:
 	std::vector<ServerConfig>			_all_configs;
@@ -144,7 +150,14 @@ private:
 	int									_status_code = 200;
 	std::string							_status_code_str = "OK";
 
-	std::string							_tmp_filename_infile;
-	bool								_has_tmp_infile = false;
 	bool								_receiving_chunked = false;
-};	
+
+	std::string							_post_body_filename;
+	std::vector<PostFile>				_post_file_uploads;
+	std::string							_multipart_tmp_filename;
+
+	e_req_state							_state = INITIAL_RECV;
+	size_t								_body_bytes_read = 0;
+
+	size_t								_content_length;
+};
