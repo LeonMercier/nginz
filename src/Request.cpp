@@ -7,28 +7,36 @@ Request::Request(std::vector<ServerConfig> configs) : _all_configs(configs) {
 	_is_cgi = false;
 }
 
-e_req_state	Request::addToRequest(std::string part) {
+void	Request::addToRequest(std::string part) {
 
 	// std::cout << "addToRequest()" << std::endl;
 	// std::cout << part << std::endl;
 
 	_raw_request += std::string(part);
 
+	if (_state == INITIAL_RECV && !headerIsComplete()) {
+		_state = RECV_MORE;
+		return ;
+	}
 	// headers will not be parsed multiple times when they have already been
 	// received
 	if (_receiving_chunked) {
-		if (handleChunked(0) == RECV_MORE) {
-			return RECV_MORE;
+		handleChunked();
+		if (_state == READY) {
+			handleCompleteRequest(200);
 		}
-		handleCompleteRequest(200);
-		return READY;
+		return ;
 	}
 
-	if (headerIsComplete()) {
+	if (_state == INITIAL_RECV) {
 		size_t body_start =
 			_raw_request.find(header_terminator) + header_terminator.length();
 
 		_headers = parseHeader(_raw_request.substr(0, body_start));
+		_raw_request.erase(0, body_start);
+		// for (auto it = _headers.begin(); it != _headers.end(); it++) {
+		// 	std::cout << it->first << " = " << it->second << std::endl;
+		// }
 
 		setConfig();
 
@@ -39,30 +47,23 @@ e_req_state	Request::addToRequest(std::string part) {
 		if (method == _headers.end()) {
 			std::cerr << "Request::addToRequest(): no method field" << std::endl;
 			handleCompleteRequest(400);
-			return READY;
+			return ;
 		}
-		else if (method->second == "GET") {
-			// std::cerr << "Request::addToRequest(): happy" << std::endl;
+		else if (method->second == "GET" || method->second == "DELETE") {
 			handleCompleteRequest(200);
-			return READY;
+			return ;
 		}
-		else if (method->second == "POST") {
-			if (handlePost(body_start) == READY) {
-				handleCompleteRequest(200);
-				return READY;
-			} else {
-				return RECV_MORE;
-			}
-		}
-		else {
+		else if (
+			method->second != "GET" &&
+			method->second != "POST" &&
+			method->second != "DELETE")
+		{
 			std::cerr << "Request::addToRequest(): unknown method" << std::endl;
 			handleCompleteRequest(400);
-			return READY;
+			return ;
 		}
 	}
-	else {
-		return RECV_MORE;
-	}
+	handlePost();
 }
 
 void	Request::setConfig() {
@@ -99,6 +100,7 @@ void Request::handleCompleteRequest(int status)
 	//std::string whole_req = raw_request.substr(0, body_start + body_length);
 	//raw_request.erase(0, body_start + body_length);
 
+	_state = READY;
 	getResponse(status);
 }
 
@@ -142,7 +144,7 @@ static bool extractChunks(std::string &raw_request,
 	return false;
 }
 
-e_req_state Request::handleChunked(size_t header_end) {
+void Request::handleChunked() {
 	 // std::cout << "handleChunked(): " << std::endl;
 
 	std::vector<std::string> chunks;
@@ -151,21 +153,20 @@ e_req_state Request::handleChunked(size_t header_end) {
 	// TODO: check that generated filename doesnt already
 	// exist; generate new names until we get a non existent one
 	if (!_receiving_chunked) {
-		_tmp_filename_infile = generateTempFilename();
+		_post_body_filename = generateTempFilename();
 	}
 
 	// ios::app => write to the end of the file
-	std::ofstream file(_tmp_filename_infile, std::ios::binary | std::ios::app);
+	std::ofstream file(_post_body_filename, std::ios::binary | std::ios::app);
 
 	// this is the initial call to this function
 	if (!_receiving_chunked) {
 		// std::cout << "handleChunked(): initial call" << _raw_request << std::endl;
 		_receiving_chunked = true;
-		_has_tmp_infile = true;
-		_raw_request.erase(0, header_end);
 		if (_raw_request.empty()) {
 			// first recv() only contained a header
-			return RECV_MORE;
+			_state = RECV_MORE;
+			return ;
 		}
 	} else {
 		// std::cout << "handleChunked(): further call" << std::endl;
@@ -181,25 +182,26 @@ e_req_state Request::handleChunked(size_t header_end) {
 		// TODO: do we need to reset receiving_chunked or will the Request
 		// always be destroyed after this?
 		_receiving_chunked = false;
-		return READY;
+		_state = READY;
 	} else {
-		return RECV_MORE;
+		_state = RECV_MORE;
 	}
 }
 
-e_req_state Request::handlePost(size_t body_start) {
+void	Request::initialPost() {
 	//method is not allowed in config
 	initResponseStruct(200);
 	if (methodIsNotAllowed()) {
 		handleCompleteRequest(405);
-		return READY;
+		return ;
 	}
 
 	// if there is transfer-encoding, then content-length can be ignored
 	if (_headers.find("transfer-encoding") != _headers.end()) {
 		if (_headers.at("transfer-encoding") == "chunked") {
 			// std::cout << "receiving chunked transfer" << std::endl;
-			return handleChunked(body_start);
+			handleChunked();
+			return ;
 		}
 		// header has transfer-encoding but it is not set to chunked =>
 		// we proceed to look for content-length
@@ -211,32 +213,46 @@ e_req_state Request::handlePost(size_t body_start) {
 	// content-length missing
 	if (_headers.find("content-length") == _headers.end()) {
 		handleCompleteRequest(411);
-		return READY;
+		return ;
 	}
 
 	// has content length
-	size_t content_length = 0;
+	_content_length = 0;
 	try {
-		content_length = std::stoul(_headers.at("content-length"));
+		_content_length = std::stoul(_headers.at("content-length"));
 	} catch (...) {
-		std::cerr << "Client::handlePost(): failed to find Content-Length";
+		std::cerr << "Client::handlePost(): failed to parse Content-Length";
 		std::cerr << std::endl;
 		// TODO: handle invalid value in content-length
 	}
 
 	// client wants to send too big of a body
 	if (_config.client_max_body_size != 0
-		&& content_length > _config.client_max_body_size) {
+		&& _content_length > _config.client_max_body_size) {
 		std::cerr << "Client body length larger than allowed" << std::endl;
 		handleCompleteRequest(413);
-		return READY;
+		return ;
 	}
-	// happy path
-	if (_raw_request.length() >= body_start + content_length) {
+	_post_body_filename = generateTempFilename();
+}
+
+void Request::handlePost() {
+	if (_state == INITIAL_RECV) {
+		initialPost();
+	}
+	if (_state == READY) {
+		return ;
+	}
+	std::ofstream file(_post_body_filename, std::ios::app | std::ios::binary);
+	_body_bytes_read += _raw_request.length();
+	file << _raw_request;
+	_raw_request = "";
+	if (_body_bytes_read >= _content_length) {
+		std::cout << "handlePost(): complete POST" << std::endl;
+		// std::cout << _raw_request << std::endl;
 		handleCompleteRequest(200);
-		return READY;
 	} else {
-		return RECV_MORE;
+		_state = RECV_MORE;
 	}
 }
 
@@ -272,6 +288,10 @@ std::string		Request::getPath(){
 
 bool			Request::getIsCgi() {
 	return _is_cgi;
+}
+
+e_req_state	Request::getState() {
+	return _state;
 }
 
 int Request::getPostContentLength (std::string request) {
@@ -474,6 +494,11 @@ void Request::validateRequest() {
 		_status_code = 301;
 	}
 
+	else if (_method == "POST") {
+		// TODO: be smarter
+		//yolo
+		return ;
+	}
 	// is the path a file or directory
 	else if (std::filesystem::is_directory(_location.root + _path)) {
 		_is_directory = true;
@@ -515,7 +540,40 @@ void Request::handleCgi() {
 		_is_cgi = true;
 }
 
+void	Request::separateMultipart() {
+	// Now we have to read _post_body_filename and separate the individual 
+	// files from it. 
+	// We can use the PostFile class and _post_file_uploads vector for it 
+	// (they are empty at this point)
+	// or we can do something else
+	std::string content_type_line = _headers.at("content-type");
+	std::string content_type = content_type_line.substr(
+		0, content_type_line.find(";"));
+	std::string boundary = content_type_line.substr(content_type.length() + 2);
+	boundary = boundary.substr(boundary.find("=") + 1);
+	std::cout << "CONT-TYPE: " << content_type << std::endl;
+	std::cout << "BOUNDARY: " << boundary << std::endl;
+}
+
+void	Request::respondPost() {
+	// std::cout << "Request::respondPost()" << std::endl;
+	// the POST body is in the file _post_body_filename
+	auto content_type_iter = _headers.find("content-type");
+	if (content_type_iter != _headers.end()) {
+		if (content_type_iter->second.find(
+			"multipart/form-data") != std::string::npos)
+		{
+			separateMultipart();
+		} else {
+			// TODO: not sure what is suposed to happen when its not a 
+			// multipart AND not a CGI
+		}
+	}
+	// TODO:create the actual response
+}
+
 void Request::getResponse(int status_code) {
+	std::cout << "GETRESPONSE" << std::endl;
 
 	initResponseStruct(status_code);
 	if (_status_code == 200) {
@@ -523,13 +581,15 @@ void Request::getResponse(int status_code) {
 		std::cout << "|  " << "Status After Validation: " << _status_code << std::endl;
 	}
 
-	if (_status_code != 200)
+	if (_status_code != 200) 
 		handleError(_status_code);
 	else if (endsWith(_path, ".py")){
 		handleCgi();
 	}
 	else if (_method == "GET")
 		handleGet();
+	else if (_method == "POST")
+		respondPost(); // sorry handlePost() function name already exists
 	else if (_method == "DELETE")
 		handleDelete();
 	_response.full_response = _response.header + _response.body;

@@ -12,12 +12,31 @@
     <img src="dip.png" alt="My Dip" />
     <img src="micro_chip.jpg" alt="My Micro Chip" />
 
+	<br>
+	<hr width="50%">
+	<br>
 
     <h2>Upload a file</h2>
-    <form>
+    <form method="POST" action="/uploads/" enctype="multipart/form-data">
         <input type="file" id="fileUpload" name="fileUpload">
         <input type="submit" value="Upload">
     </form>
+
+	<br>
+	<hr width="50%">
+	<br>
+
+    <h2>Upload multiple different things</h2>
+	<form action="/uploads" method="post" enctype="multipart/form-data">
+	  <p><input type="text" name="text" value="text default">
+	  <p><input type="file" name="file1" multiple>
+	  <p><input type="file" name="file2">
+	  <p><button type="submit">Submit</button>
+	</form>
+
+	<br>
+	<hr width="50%">
+	<br>
 
 	<!-- Form with POST request -->
     <h2>Submit a form</h2>
