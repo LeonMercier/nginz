@@ -17,6 +17,7 @@ typedef enum e_client_state {
 	SEND,
 	RECV_CHUNKED,
 	WAIT_CGI,
+	TIMEOUT,
 	DISCONNECT,
 	CLIENT_ERROR
 } t_client_state;
@@ -34,11 +35,15 @@ public:
 	t_client_state	getState();
 	void			setState(t_client_state state);
 	void			changeEpollMode(uint32_t mode);
-
 	void			closeConnection(int epoll_fd, int client_fd);
 	void			recvFrom();
 	void			sendTo();
 	void			updateLastEvent();
+	time_t			getLastEvent();
+	int				getClientFd();
+
+	std::vector<t_rsp>			send_queue;
+	Request 					request;
 
 
 private:
@@ -46,7 +51,7 @@ private:
 	int							epoll_fd;
 	int							fd;
 	t_client_state				state;
-	std::vector<t_rsp>			send_queue;
-	Request 					request;
+	
+	
 	time_t						_last_event;
 };

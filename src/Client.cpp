@@ -3,16 +3,20 @@
 #include "../inc/utils.hpp"
 
 Client::Client(std::vector<ServerConfig> configs, int epoll_fd, int fd) :
+	request(configs),
 	configs(configs),
 	epoll_fd(epoll_fd),
-	fd(fd),
-	request(configs)
+	fd(fd)
 {
 	state = IDLE;
 }
 
 t_client_state Client::getState() {
 	return state;
+}
+
+int	Client::getClientFd(){
+	return fd;
 }
 
 void Client::setState(t_client_state state) {
@@ -25,19 +29,33 @@ void Client::changeEpollMode(uint32_t mode) {
 	e_event.data.fd = fd;
 	// note: epoll_ct_MOD, not epoll_ctl_ADD
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &e_event) < 0) {
-		throw std::runtime_error("epoll_ctl() failed");
+		throw std::runtime_error("changeEpollMode: epoll_ctl() failed");
 	}
+}
+
+time_t Client::getLastEvent(){
+	return _last_event;
 }
 
 // Client object is erased in event_loop() after the state is checked
 void Client::closeConnection(int epoll_fd, int client_fd) {
+	std::cout << "CLIENT_FD: " << client_fd << std::endl;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) < 0) {
-		throw std::runtime_error("epoll_ctl() failed");
+		if (errno == EBADF)
+		{
+			std::cout << "SHITTY FD\n";
+		}
+		else if (errno == EINVAL)
+		{
+			std::cout << "SHITTY EPOLLFD\n";
+		}
+		throw std::runtime_error("closeConnection: epoll_ctl() failed");
 	}
 
 	if (close(client_fd) < 0) {
 		throw std::runtime_error("failed to close() client_fd");
 	}
+	std::cout << "Clientfd " << client_fd << " has been closed\n" ;
 	state = DISCONNECT;
 }
 
@@ -66,7 +84,8 @@ void Client::recvFrom() {
 	// an event anyway when the client closes the connection
 	if (bytes_read == 0) {
 		std::cout << "recvFrom(): read 0 bytes" << std::endl;
-		closeConnection(epoll_fd,fd);
+		// closeConnection(epoll_fd,fd);
+		state = DISCONNECT;
 		return ;
 	}
 
@@ -156,7 +175,8 @@ void Client::sendTo() {
 			if (send_queue.size() == 0) {
 				// we have sent all responses in the queue
 				if (conn_type == "close" ) {
-					closeConnection(epoll_fd, fd);
+					//closeConnection(epoll_fd, fd);
+					state = DISCONNECT;
 				} else { // nothing left to send
 					changeEpollMode(EPOLLIN);
 					state = IDLE;

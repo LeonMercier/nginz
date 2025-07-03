@@ -575,14 +575,16 @@ void	Request::respondPost() {
 void Request::getResponse(int status_code) {
 	std::cout << "GETRESPONSE" << std::endl;
 
+	if (status_code == 408) {
+		handleError(status_code);
+		_response.full_response = _response.header + _response.body;
+		return ;
+	}
 	initResponseStruct(status_code);
 	if (_status_code == 200) {
 		validateRequest();
 		std::cout << "|  " << "Status After Validation: " << _status_code << std::endl;
 	}
-	std::cout << "Current time is: " << std::time(nullptr) << "\n\n";
-	sleep(5);
-	std::cout << "Time after sleep(5) is: " << std::time(nullptr) << "\n\n";
 
 	if (_status_code != 200) 
 		handleError(_status_code);
