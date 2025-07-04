@@ -59,7 +59,7 @@ static void createServerSocket(
 	e_event.data.fd = socket_fd;  // The socket itself
 	e_event.events = EPOLLIN;	  // Notify me when incoming data is available
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &e_event) < 0) {
-		throw std::runtime_error("epoll_ctl() failed"); 
+		throw std::runtime_error("createServerSocket(): epoll_ctl() failed"); 
 	}
 	for (auto it = configs.begin(); it != configs.end(); it++) {
 		servers[socket_fd].push_back(*it);
@@ -78,6 +78,24 @@ static std::map<std::string, std::vector<ServerConfig>> sortConfigs(
 		sorted[id].push_back(*it);
 	}
 	return sorted;
+}
+
+void	checkClientTimeout(std::map<int, Client> &clients)
+{
+	for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it)
+	{
+		// std::cout << "\nClient[" << it->second.getClientFd() << "]\n";
+		time_t	latest_event = it->second.getLastEvent();
+		time_t	current_time = std::time(nullptr);
+		
+		if (current_time - latest_event >= 5)
+		{
+			std::cout << "\n\n\n\ntrying to setState of the Client[" << it->second.getClientFd() << "], whose latest events is at: \n"
+			<< std::asctime(std::localtime(&latest_event)) << "now its: " << std::asctime(std::localtime(&current_time)) << std::endl;
+			it->second.setState(TIMEOUT);
+			it->second.changeEpollMode(EPOLLOUT);
+		}
+	}
 }
 
 int eventLoop(std::vector<ServerConfig> server_configs)
@@ -101,7 +119,12 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 
 	while (true)
 	{
-		int ready = epoll_wait(epoll_fd, events, 64, -1);
+		checkClientTimeout(clients);
+		// time_t time = std::time(nullptr);
+		// std::cout << "Time before epoll_wait: " << std::asctime(std::localtime(&time)) << std::endl;
+		int ready = epoll_wait(epoll_fd, events, 64, 1000);
+		// time = std::time(nullptr);
+		// std::cout << "Time after epoll_wait: " << std::asctime(std::localtime(&time)) << std::endl;
 		if (ready < 0) { throw std::runtime_error("epoll_wait() failed"); };
 		if (ready == 0)
 			continue;
@@ -141,23 +164,46 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 				e_event.events = EPOLLIN;
 				e_event.data.fd = client_fd;
 				if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &e_event) < 0) {
-					throw std::runtime_error("epoll_ctl() failed");
+					throw std::runtime_error("eventLoop(): epoll_ctl() failed");
 				}
+				clients.at(client_fd).updateLastEvent();
 			}
 			else // existing connection
 			{
+				clients.at(curr_event_fd).updateLastEvent();
+
 				// std::cout << "receiving: socket: " << socket_fd;
 				//std::cout << " client fd: " << curr_event_fd << std::endl;
+				if (clients.at(curr_event_fd).getState() == DISCONNECT) {
+					std::cout << "CLIENT WANTS TO DISCONNECT\n";
+					clients.at(curr_event_fd).closeConnection(epoll_fd, clients.at(curr_event_fd).getClientFd());
+					clients.erase(curr_event_fd);
+
+					continue;
+				}
 
 				// map::at() will throw std::out_of_range if not found
 				if (events[i].events & EPOLLIN) {
 					clients.at(curr_event_fd).recvFrom();
 				}
 				if (events[i].events & EPOLLOUT) {
-					clients.at(curr_event_fd).sendTo();
-				}
-				if (clients.at(curr_event_fd).getState() == DISCONNECT) {
-					clients.erase(curr_event_fd);
+					if (clients.at(curr_event_fd).getState() != TIMEOUT){
+						clients.at(curr_event_fd).sendTo();
+					}
+					else{
+						Client &cur_client = clients.at(curr_event_fd);
+						std::cout << "\nSENDING TIMEOUT HEADER TO CLIENT:" << cur_client.getClientFd() << std::endl;
+						// maybe front instead of back
+						cur_client.request.getResponse(408);
+						cur_client.send_queue.push_back(cur_client.request.getRes());
+						std::cout << "After creating send_que vector\n";
+						for (auto it = cur_client.send_queue.begin(); it != cur_client.send_queue.end(); it++)
+						{
+							std::cout << it->header << std::endl;
+						}
+						cur_client.sendTo();
+						cur_client.setState(DISCONNECT);
+					}
 				}
 
 			}

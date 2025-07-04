@@ -3,16 +3,20 @@
 #include "../inc/utils.hpp"
 
 Client::Client(std::vector<ServerConfig> configs, int epoll_fd, int fd) :
+	request(configs),
 	configs(configs),
 	epoll_fd(epoll_fd),
-	fd(fd),
-	request(configs)
+	fd(fd)
 {
 	state = IDLE;
 }
 
 t_client_state Client::getState() {
 	return state;
+}
+
+int	Client::getClientFd(){
+	return fd;
 }
 
 void Client::setState(t_client_state state) {
@@ -25,20 +29,40 @@ void Client::changeEpollMode(uint32_t mode) {
 	e_event.data.fd = fd;
 	// note: epoll_ct_MOD, not epoll_ctl_ADD
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &e_event) < 0) {
-		throw std::runtime_error("epoll_ctl() failed");
+		throw std::runtime_error("changeEpollMode: epoll_ctl() failed");
 	}
+}
+
+time_t Client::getLastEvent(){
+	return _last_event;
 }
 
 // Client object is erased in event_loop() after the state is checked
 void Client::closeConnection(int epoll_fd, int client_fd) {
+	std::cout << "CLIENT_FD: " << client_fd << std::endl;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_fd, NULL) < 0) {
-		throw std::runtime_error("epoll_ctl() failed");
+		if (errno == EBADF)
+		{
+			std::cout << "SHITTY FD\n";
+		}
+		else if (errno == EINVAL)
+		{
+			std::cout << "SHITTY EPOLLFD\n";
+		}
+		throw std::runtime_error("closeConnection: epoll_ctl() failed");
 	}
 
 	if (close(client_fd) < 0) {
 		throw std::runtime_error("failed to close() client_fd");
 	}
+	std::cout << "Clientfd " << client_fd << " has been closed\n" ;
 	state = DISCONNECT;
+}
+
+void	Client::updateLastEvent()
+{
+	_last_event = std::time(nullptr);
+	// std::cout << "Client[" << fd << "] latest event: " << std::asctime(std::localtime(&_last_event)) << std::endl;
 }
 
 // TODO: incomplete header -> timeout
@@ -60,7 +84,8 @@ void Client::recvFrom() {
 	// an event anyway when the client closes the connection
 	if (bytes_read == 0) {
 		std::cout << "recvFrom(): read 0 bytes" << std::endl;
-		closeConnection(epoll_fd,fd);
+		// closeConnection(epoll_fd,fd);
+		state = DISCONNECT;
 		return ;
 	}
 
@@ -81,7 +106,7 @@ void Client::recvFrom() {
 		// TODO: sometimes the connection is closed without sending anything
 		// back? So we cannot always toggle to EPOLLOUT?
 		 
-		send_queue.push_back({request.getHeaders(), request.getRes()});
+		send_queue.push_back(request.getRes());
 
 		// reset the request member to an empty state
 		request = Request(configs);
@@ -102,8 +127,8 @@ void Client::sendTo() {
 		t_cgi_state cgi_result = cgi.checkCgi(); // this has waitpid
 		if (cgi_result == CGI_READY) {
 			try {
-				t_rsp tmp{};
-				tmp.response.full_response = fileToString(cgi.output_filename);
+				Response tmp;
+				tmp.full_response = fileToString(cgi.output_filename);
 				std::cout << "deleting file: " << cgi.output_filename << std::endl;
 				std::remove(cgi.output_filename.c_str());
 				send_queue.push_back(tmp);
@@ -124,7 +149,7 @@ void Client::sendTo() {
 		}
 
 		if (to_send.empty()) {
-			to_send = send_queue.front().response.full_response;
+			to_send = send_queue.front().full_response;
 		}
 
 		// std::cout << "SENDING" << to_send <<std::endl;
@@ -136,21 +161,13 @@ void Client::sendTo() {
 
 		to_send.erase(0, bytes_sent);
 
-		// default mode is keep-alive
-		std::string conn_type = "keep-alive";
-		try {
-			conn_type = send_queue.front().header.at("connection");
-		} catch (...) {
-			std::cerr << "Client::sendTo(): no Connection field in header"\
-				<< std::endl;
-		}
-
 		if (to_send.empty()) {
 			send_queue.erase(send_queue.begin());
 			if (send_queue.size() == 0) {
 				// we have sent all responses in the queue
-				if (conn_type == "close" ) {
-					closeConnection(epoll_fd, fd);
+				if (request.getConnectionTypeIsClose() == true ) {
+					//closeConnection(epoll_fd, fd);
+					state = DISCONNECT;
 				} else { // nothing left to send
 					changeEpollMode(EPOLLIN);
 					state = IDLE;
