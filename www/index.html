@@ -51,15 +51,16 @@
 	</form>
 
 	<!-- Form with GET request -->
-    <h2>Search for something</h2>
-	<form method="get" action="/search">
-    	<input type="search" name="location" placeholder="Search.." />
-    	<input type="submit" value="Go" />
+    <h2>Search for something: CGI POST</h2>
+	<form method="post" action="/cgi/search.py">
+    	<input type="search" name="query" placeholder="Search.." />
+    	<input type="search" name="category" placeholder="Category..." />
+    	<input type="submit" value="I\'m feeling lucky" />
 	</form>
 
 	<!-- GET with multiple fields -->
-    <h2>Who are you</h2>
-	<form method="get" action="/who.py">
+    <h2>Who are you: CGI GET</h2>
+	<form method="get" action="/cgi/who.py">
     	<input type="text" name="firstname" placeholder="First Name" />
     	<input type="text" name="lastname" placeholder="Last Name" />
     	<input type="text" name="favcolor" placeholder="Favourite color" />
