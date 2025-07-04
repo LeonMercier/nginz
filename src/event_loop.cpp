@@ -84,7 +84,7 @@ void	checkClientTimeout(std::map<int, Client> &clients)
 {
 	for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
-		std::cout << "\nClient[" << it->second.getClientFd() << "]\n";
+		// std::cout << "\nClient[" << it->second.getClientFd() << "]\n";
 		time_t	latest_event = it->second.getLastEvent();
 		time_t	current_time = std::time(nullptr);
 		
