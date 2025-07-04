@@ -2,6 +2,8 @@
 #include "../inc/Structs.hpp"
 #include "../inc/Client.hpp"
 
+const static int _CLIENT_TIMEOUT_S = 10;
+
 static void createServerSocket(
 	int epoll_fd,
 	std::map<int, std::vector<ServerConfig>> &servers,
@@ -80,7 +82,7 @@ static std::map<std::string, std::vector<ServerConfig>> sortConfigs(
 	return sorted;
 }
 
-void	checkClientTimeout(std::map<int, Client> &clients)
+static void	checkClientTimeout(std::map<int, Client> &clients)
 {
 	for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
@@ -88,12 +90,30 @@ void	checkClientTimeout(std::map<int, Client> &clients)
 		time_t	latest_event = it->second.getLastEvent();
 		time_t	current_time = std::time(nullptr);
 		
-		if (current_time - latest_event >= 5)
+		if (current_time - latest_event >= _CLIENT_TIMEOUT_S)
 		{
-			std::cout << "\n\n\n\ntrying to setState of the Client[" << it->second.getClientFd() << "], whose latest events is at: \n"
-			<< std::asctime(std::localtime(&latest_event)) << "now its: " << std::asctime(std::localtime(&current_time)) << std::endl;
-			it->second.setState(TIMEOUT);
-			it->second.changeEpollMode(EPOLLOUT);
+			// std::cout << "\n\n\n\ntrying to setState of the Client[" << it->second.getClientFd() << "], whose latest events is at: \n"
+			// << std::asctime(std::localtime(&latest_event)) << "now its: " << std::asctime(std::localtime(&current_time)) << std::endl;
+
+			// 408: RFC: "The client did not produce a request within the time 
+			// that the server was prepared to wait."
+			// TODO: timeout if send is takng too long?
+			t_client_state client_state = it->second.getState();
+			if (client_state == DISCONNECT)
+			{
+				// client will get disconnected on this iteration of the 
+				// event loop anyway
+				continue ;
+			}
+			if (client_state == IDLE) 
+			{
+				it->second.setState(DISCONNECT);
+			}
+			else if (client_state == RECV || client_state == RECV_CHUNKED)
+			{
+				it->second.setState(TIMEOUT);
+				it->second.changeEpollMode(EPOLLOUT);
+			}
 		}
 	}
 }
@@ -170,39 +190,39 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 			}
 			else // existing connection
 			{
-				clients.at(curr_event_fd).updateLastEvent();
+				Client &curr_client = clients.at(curr_event_fd);
+				curr_client.updateLastEvent();
 
 				// std::cout << "receiving: socket: " << socket_fd;
 				//std::cout << " client fd: " << curr_event_fd << std::endl;
-				if (clients.at(curr_event_fd).getState() == DISCONNECT) {
-					std::cout << "CLIENT WANTS TO DISCONNECT\n";
-					clients.at(curr_event_fd).closeConnection(epoll_fd, clients.at(curr_event_fd).getClientFd());
+				if (curr_client.getState() == DISCONNECT) {
+					std::cout << "DISCONNECTING CLIENT\n";
+					curr_client.closeConnection(epoll_fd, curr_client.getClientFd());
 					clients.erase(curr_event_fd);
-
 					continue;
 				}
 
 				// map::at() will throw std::out_of_range if not found
 				if (events[i].events & EPOLLIN) {
-					clients.at(curr_event_fd).recvFrom();
+					curr_client.recvFrom();
 				}
 				if (events[i].events & EPOLLOUT) {
-					if (clients.at(curr_event_fd).getState() != TIMEOUT){
-						clients.at(curr_event_fd).sendTo();
+					if (curr_client.getState() != TIMEOUT){
+						curr_client.sendTo();
 					}
 					else{
-						Client &cur_client = clients.at(curr_event_fd);
-						std::cout << "\nSENDING TIMEOUT HEADER TO CLIENT:" << cur_client.getClientFd() << std::endl;
+						std::cout << "\nSENDING TIMEOUT HEADER TO CLIENT:" 
+							<< curr_client.getClientFd() << std::endl;
 						// maybe front instead of back
-						cur_client.request.getResponse(408);
-						cur_client.send_queue.push_back(cur_client.request.getRes());
+						curr_client.request.getResponse(408);
+						curr_client.send_queue.push_back(curr_client.request.getRes());
 						std::cout << "After creating send_que vector\n";
-						for (auto it = cur_client.send_queue.begin(); it != cur_client.send_queue.end(); it++)
+						for (auto it = curr_client.send_queue.begin(); it != curr_client.send_queue.end(); it++)
 						{
 							std::cout << it->header << std::endl;
 						}
-						cur_client.sendTo();
-						cur_client.setState(DISCONNECT);
+						curr_client.sendTo();
+						curr_client.setState(DISCONNECT);
 					}
 				}
 

@@ -9,6 +9,10 @@
 
 import os
 import sys
+import time
+
+# trigger CGI script timeout
+# time.sleep(5)
 
 raw_query = os.environ['QUERY_STRING']
 # print("AAAAAAAAAAA", file=sys.stderr)

@@ -2,17 +2,28 @@
 
 t_cgi_state	CgiHandler::checkCgi()
 {
-	// TIME_OUT
-	//waitpid WNOHANG
-	if (waitpid(_pid, NULL, 0) > 0){
-		std::cout << "\n\nCGI_READY, OUTPUT:\n" << std::endl;
+	int	status;
 
-		std::fstream fafa(output_filename);
-		std::string str;
-		while (getline(fafa, str))
-		{
-			std::cout << str << std::endl;
+	if (std::time(nullptr) - _start_time >= _CGI_TIMEOUT_S){
+		std::cout << "KILL THE CHILDREN\n";
+		kill(_pid, SIGKILL);
+		return CGI_TIMEOUT;
+	}
+	if (waitpid(_pid, &status, WNOHANG) > 0){
+		if (WIFEXITED(status)){
+			if (WEXITSTATUS(status) != 0){
+				return CGI_FAILED;
+			}
 		}
+		std::cout << "CGI script exited succesfully" << std::endl;
+		// std::cout << "\n\nCGI_READY, OUTPUT:\n" << std::endl;
+		//
+		// std::fstream fafa(output_filename);
+		// std::string str;
+		// while (getline(fafa, str))
+		// {
+		// 	std::cout << str << std::endl;
+		// }
 
 		return CGI_READY;
 	}
@@ -91,13 +102,6 @@ void	CgiHandler::launchCgi(Request &request)
 {
 	std::vector<char*> envp;
 	std::vector<std::string> envVars;
-
-	// this is really done elsewhere, just to demonstrate:
-	// std::string	input_filename = generateTempFilename();
-	// int	input_fd = open(input_filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0600);
-	// if (input_fd < 0){
-		// 	// throw
-		// }
 		
 	// Creating temp input and output file pointers for CGI (input for POST body, output for script's output)
 	output_filename = generateTempFilename();
@@ -115,7 +119,7 @@ void	CgiHandler::launchCgi(Request &request)
 	std::string	executable = request.getLocation().cgi_path_py;
 	std::string	script = request.getLocation().root + request.getPath();
 
-	std::cout << "\n\nCGI_PATH: " << executable << "\n\nrequest.path: " << request.getPath() << "\n\nSCRIPT_PATH: " << script << std::endl;
+	// std::cout << "\n\nCGI_PATH: " << executable << "\n\nrequest.path: " << request.getPath() << "\n\nSCRIPT_PATH: " << script << std::endl;
 
 	char *argv[] = {
 		(char*)executable.c_str(),
@@ -123,7 +127,7 @@ void	CgiHandler::launchCgi(Request &request)
 		nullptr
 	};
 
-	std::cout << "\n\n\n\nCGIHANDLER\n\n\n\n";
+	// std::cout << "\n\n\n\nCGIHANDLER\n\n\n\n";
 	int pid = fork();
 
 	if (pid < 0) {
@@ -132,17 +136,19 @@ void	CgiHandler::launchCgi(Request &request)
 		throw std::runtime_error("fork() failed"); // are we closing the server?
 	}
 	else if (pid == 0) {
-	
-		// redirecting input and output fds to STDIN and STDOUT for execve
-		// dup2(input_fd, STDIN_FILENO);
+		int input_fd = open(request.getPostBodyFilename().c_str(), O_RDONLY, 0644);
+		if (input_fd >= 0){
+			std::cerr << "WE HAVE A FILE\n";
+			dup2(input_fd, STDIN_FILENO);
+			close(input_fd);
+		}
 		dup2(output_fd, STDOUT_FILENO);
-
-		// close(input_fd);
 		close(output_fd);
 		execve(argv[0], argv, envp.data());
 		// throw something ?
 	}
 	else {
+		_start_time = std::time(nullptr);
 		_pid = pid;
 		close(output_fd);
 	}
