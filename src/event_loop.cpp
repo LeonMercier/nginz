@@ -195,11 +195,11 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 						std::cout << "\nSENDING TIMEOUT HEADER TO CLIENT:" << cur_client.getClientFd() << std::endl;
 						// maybe front instead of back
 						cur_client.request.getResponse(408);
-						cur_client.send_queue.push_back({cur_client.request.getHeaders(), cur_client.request.getRes()});
+						cur_client.send_queue.push_back(cur_client.request.getRes());
 						std::cout << "After creating send_que vector\n";
-						for (auto it = cur_client.send_queue.front().header.begin(); it != cur_client.send_queue.front().header.end(); it++)
+						for (auto it = cur_client.send_queue.begin(); it != cur_client.send_queue.end(); it++)
 						{
-							std::cout << it->first << it->second << std::endl;
+							std::cout << it->header << std::endl;
 						}
 						cur_client.sendTo();
 						cur_client.setState(DISCONNECT);

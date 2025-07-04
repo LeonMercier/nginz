@@ -106,7 +106,7 @@ void Client::recvFrom() {
 		// TODO: sometimes the connection is closed without sending anything
 		// back? So we cannot always toggle to EPOLLOUT?
 		 
-		send_queue.push_back({request.getHeaders(), request.getRes()});
+		send_queue.push_back(request.getRes());
 
 		// reset the request member to an empty state
 		request = Request(configs);
@@ -127,8 +127,8 @@ void Client::sendTo() {
 		t_cgi_state cgi_result = cgi.checkCgi(); // this has waitpid
 		if (cgi_result == CGI_READY) {
 			try {
-				t_rsp tmp{};
-				tmp.response.full_response = fileToString(cgi.output_filename);
+				Response tmp;
+				tmp.full_response = fileToString(cgi.output_filename);
 				std::cout << "deleting file: " << cgi.output_filename << std::endl;
 				std::remove(cgi.output_filename.c_str());
 				send_queue.push_back(tmp);
@@ -149,7 +149,7 @@ void Client::sendTo() {
 		}
 
 		if (to_send.empty()) {
-			to_send = send_queue.front().response.full_response;
+			to_send = send_queue.front().full_response;
 		}
 
 		// std::cout << "SENDING" << to_send <<std::endl;

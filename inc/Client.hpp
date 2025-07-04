@@ -5,11 +5,6 @@
 #include "parse_header.hpp"
 #include "Request.hpp"
 #include "CgiHandler.hpp"
-
-typedef struct s_rsp {
-	std::map<std::string, std::string>	header;
-	Response							response;
-} t_rsp;
 	
 
 typedef enum e_client_state {
@@ -42,7 +37,7 @@ public:
 	time_t			getLastEvent();
 	int				getClientFd();
 
-	std::vector<t_rsp>			send_queue;
+	std::vector<Response>		send_queue;
 	Request 					request;
 
 

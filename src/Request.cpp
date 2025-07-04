@@ -63,7 +63,10 @@ void	Request::addToRequest(std::string part) {
 			return ;
 		}
 	}
-	handlePost();
+	auto method = _headers.find("method");
+	if (method != _headers.end() && method->second == "POST"){
+		handlePost();
+	}
 }
 
 void	Request::setConfig() {
@@ -391,7 +394,7 @@ void Request::createHeader(std::string content_type) {
 	}
 
 	_response.header += "\r\n";
-	std::cout << "response_header: " << _response.header << std::endl;
+	// std::cout << "response_header:\n" << _response.header << std::endl;
 }
 
 void Request::createBody(std::string filename) {
