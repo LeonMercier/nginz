@@ -161,20 +161,11 @@ void Client::sendTo() {
 
 		to_send.erase(0, bytes_sent);
 
-		// default mode is keep-alive
-		std::string conn_type = "keep-alive";
-		try {
-			conn_type = send_queue.front().header.at("connection");
-		} catch (...) {
-			std::cerr << "Client::sendTo(): no Connection field in header"\
-				<< std::endl;
-		}
-
 		if (to_send.empty()) {
 			send_queue.erase(send_queue.begin());
 			if (send_queue.size() == 0) {
 				// we have sent all responses in the queue
-				if (conn_type == "close" ) {
+				if (request.getConnectionTypeIsClose() == true ) {
 					//closeConnection(epoll_fd, fd);
 					state = DISCONNECT;
 				} else { // nothing left to send

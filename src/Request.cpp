@@ -290,6 +290,10 @@ bool			Request::getIsCgi() {
 	return _is_cgi;
 }
 
+bool			Request::getConnectionTypeIsClose() {
+	return _connection_type_is_close;
+}
+
 e_req_state	Request::getState() {
 	return _state;
 }
@@ -377,8 +381,17 @@ void Request::createHeader(std::string content_type) {
 	if (_status_code == 301) {
 		_response.header += "Location: " + _response.redirect_path + "\r\n";
 	}
+	else if (_status_code == 408) {
+		// std::cout << "CREATING RESPONSE HEADER FOR 408\n\n";
+		_response.header += "Connection: close\r\n";
+		_connection_type_is_close = true;
+	}
+	else {
+		_response.header += "Connection: keep-alive\r\n";
+	}
 
 	_response.header += "\r\n";
+	std::cout << "response_header: " << _response.header << std::endl;
 }
 
 void Request::createBody(std::string filename) {
@@ -576,6 +589,7 @@ void Request::getResponse(int status_code) {
 	std::cout << "GETRESPONSE" << std::endl;
 
 	if (status_code == 408) {
+		_status_code = status_code;
 		handleError(status_code);
 		_response.full_response = _response.header + _response.body;
 		return ;

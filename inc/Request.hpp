@@ -132,6 +132,8 @@ public:
 
 	e_req_state							getState();
 
+	bool								getConnectionTypeIsClose();
+
 private:
 	std::vector<ServerConfig>			_all_configs;
 	ServerConfig						_config;
@@ -160,4 +162,5 @@ private:
 	size_t								_body_bytes_read = 0;
 
 	size_t								_content_length;
+	bool								_connection_type_is_close = false;
 };

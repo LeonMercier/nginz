@@ -88,7 +88,7 @@ void	checkClientTimeout(std::map<int, Client> &clients)
 		time_t	latest_event = it->second.getLastEvent();
 		time_t	current_time = std::time(nullptr);
 		
-		if (current_time - latest_event >= 60)
+		if (current_time - latest_event >= 5)
 		{
 			std::cout << "\n\n\n\ntrying to setState of the Client[" << it->second.getClientFd() << "], whose latest events is at: \n"
 			<< std::asctime(std::localtime(&latest_event)) << "now its: " << std::asctime(std::localtime(&current_time)) << std::endl;
@@ -193,9 +193,14 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 					else{
 						Client &cur_client = clients.at(curr_event_fd);
 						std::cout << "\nSENDING TIMEOUT HEADER TO CLIENT:" << cur_client.getClientFd() << std::endl;
-						// maybbe front instead of back
+						// maybe front instead of back
 						cur_client.request.getResponse(408);
 						cur_client.send_queue.push_back({cur_client.request.getHeaders(), cur_client.request.getRes()});
+						std::cout << "After creating send_que vector\n";
+						for (auto it = cur_client.send_queue.front().header.begin(); it != cur_client.send_queue.front().header.end(); it++)
+						{
+							std::cout << it->first << it->second << std::endl;
+						}
 						cur_client.sendTo();
 						cur_client.setState(DISCONNECT);
 					}
