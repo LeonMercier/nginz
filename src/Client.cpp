@@ -193,7 +193,7 @@ void Client::sendTo() {
 					state = DISCONNECT;
 				} else { // nothing left to send
 					changeEpollMode(EPOLLIN);
-					// request = Request(configs);
+					request = Request(configs);
 					state = IDLE;
 				}
 			}
