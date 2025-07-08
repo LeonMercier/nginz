@@ -67,7 +67,7 @@ void	Client::updateLastEvent()
 
 // TODO: incomplete header -> timeout
 void Client::recvFrom() {
-	//std::cout << "entered recvFrom" << std::endl;
+	std::cout << "entered recvFrom" << std::endl;
 	if (state == IDLE)
 	{
 		state = RECV;
@@ -92,8 +92,8 @@ void Client::recvFrom() {
 		return ;
 	}
 
-	// std::cout << std::string(buf, bytes_read) << std::endl;
-	// std::cout << "###" << std::endl;
+	std::cout << std::string(buf, bytes_read) << std::endl;
+	std::cout << "###" << std::endl;
 
 	request.addToRequest(std::string(buf, bytes_read));
 	if (request.getState() == READY) {

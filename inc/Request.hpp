@@ -70,8 +70,10 @@ const std::map<int, std::string> errorHttps {
 };
 
 typedef enum {
-	INITIAL_RECV,
-	RECV_MORE,
+	RECV_HEADER,
+	GOT_HEADER,
+	RECV_BODY,
+	RECV_MORE_BODY,
 	READY
 } e_req_state;
 
@@ -171,7 +173,7 @@ private:
 	std::vector<PostFile>				_post_file_uploads;
 	std::string							_multipart_tmp_filename;
 
-	e_req_state							_state = INITIAL_RECV;
+	e_req_state							_state = RECV_HEADER;
 	size_t								_body_bytes_read = 0;
 
 	size_t								_content_length;
