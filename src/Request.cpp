@@ -14,12 +14,6 @@ void	Request::addToRequest(std::string part) {
 
 	_raw_request += std::string(part);
 
-	if (_state == INITIAL_RECV && !headerIsComplete()) {
-		_state = RECV_MORE;
-		return ;
-	}
-	// headers will not be parsed multiple times when they have already been
-	// received
 	if (_receiving_chunked) {
 		handleChunked();
 		if (_state == READY) {
@@ -28,7 +22,12 @@ void	Request::addToRequest(std::string part) {
 		return ;
 	}
 
-	if (_state == INITIAL_RECV) {
+	if (_state == RECV_HEADER) {
+		if (!headerIsComplete()) {
+			// TODO: prevent client from sending an infinitely long header
+			return ;
+		}
+		_state = RECV_BODY;
 		size_t body_start =
 			_raw_request.find(header_terminator) + header_terminator.length();
 
@@ -63,9 +62,12 @@ void	Request::addToRequest(std::string part) {
 			return ;
 		}
 	}
-	auto method = _headers.find("method");
-	if (method != _headers.end() && method->second == "POST"){
-		handlePost();
+
+	if (_state == RECV_BODY || _state == RECV_MORE_BODY) {
+		auto method = _headers.find("method");
+		if (method != _headers.end() && method->second == "POST"){
+			handlePost();
+		}
 	}
 }
 
@@ -168,7 +170,6 @@ void Request::handleChunked() {
 		_receiving_chunked = true;
 		if (_raw_request.empty()) {
 			// first recv() only contained a header
-			_state = RECV_MORE;
 			return ;
 		}
 	} else {
@@ -186,12 +187,11 @@ void Request::handleChunked() {
 		// always be destroyed after this?
 		_receiving_chunked = false;
 		_state = READY;
-	} else {
-		_state = RECV_MORE;
 	}
 }
 
 void	Request::initialPost() {
+	_state = RECV_MORE_BODY;
 	//method is not allowed in config
 	initResponseStruct(200);
 	if (methodIsNotAllowed()) {
@@ -243,7 +243,7 @@ void	Request::initialPost() {
 }
 
 void Request::handlePost() {
-	if (_state == INITIAL_RECV) {
+	if (_state == RECV_BODY) {
 		initialPost();
 	}
 	if (_state == READY) {
@@ -257,8 +257,6 @@ void Request::handlePost() {
 		std::cout << "handlePost(): complete POST" << std::endl;
 		// std::cout << _raw_request << std::endl;
 		handleCompleteRequest(200);
-	} else {
-		_state = RECV_MORE;
 	}
 }
 

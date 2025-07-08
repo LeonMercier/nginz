@@ -2,8 +2,6 @@
 #include "../inc/Structs.hpp"
 #include "../inc/Client.hpp"
 
-const static int _CLIENT_TIMEOUT_S = 10;
-
 static void createServerSocket(
 	int epoll_fd,
 	std::map<int, std::vector<ServerConfig>> &servers,
