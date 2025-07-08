@@ -9,6 +9,7 @@
 
 typedef enum e_client_state {
 	IDLE,
+	RECV,
 	SEND,
 	RECV_CHUNKED,
 	WAIT_CGI,
@@ -46,7 +47,7 @@ private:
 	int							epoll_fd;
 	int							fd;
 	t_client_state				state;
-	
+	std::string					_to_send;
 	
 	time_t						_last_event;
 };

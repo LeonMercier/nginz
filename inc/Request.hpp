@@ -6,6 +6,7 @@
 #include "Webserv.hpp"
 #include "PostFile.hpp"
 
+
 const std::map<std::string, std::string> extensions {
 	{".aac", "audio/aac"},
 	{".bmp", "image/bmp"},
@@ -47,6 +48,7 @@ const std::map<int, std::string> errorCodes {
 	{500, "Internal Server Error"}, 	//Generic response when the server itself has an error
 	{501, "Not Implemented"}, 			//Server does not support functionality. Includes method?
 	{503, "Service Unavailable"}, 		//Server down for too much traffic or maintenance
+	{504, "Gateway Timeout"},
 	{505, "HTTP Version Not Supported"}	//Exactly what it sounds like
 };
 
@@ -63,6 +65,7 @@ const std::map<int, std::string> errorHttps {
     {500, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>500 Internal Server Error</title>\r\n</head>\r\n<body>\r\n<h1>500 Internal Server Error</h1>\r\n<p>The server was unable to complete your request. Please try again later.</p>\r\n</body>\r\n</html>\r\n"},
     {501, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>501 Not Implemented</title>\r\n</head>\r\n<body>\r\n<h1>501 Not Implemented</h1>\r\n<p>The server either does not recognize the request method, or it lacks the ability to fulfil the request.</p>\r\n</body>\r\n</html>\r\n"},
     {503, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>503 Service Unavailable</title>\r\n</head>\r\n<body>\r\n<h1>503 Service Unavailable</h1>\r\n<p>The server cannot handle the request because it is overloaded or down for maintenance.</p>\r\n</body>\r\n</html>\r\n"},
+	{504, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>504 Gateway Timeout</title>\r\n</head>\r\n<body>\r\n<h1>504 Gateway Timeout</h1>\r\n<p>We have a reason to suspect a trolling attempt. Eat our shorts.</p><img src=\"data:image/png;base64,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\"/>\r\n</body>\r\n</html>\r\n"},
     {505, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>505 HTTP Version Not Supported</title>\r\n</head>\r\n<body>\r\n<h1>505 HTTP Version Not Supported</h1>\r\n<p>The server does not support the HTTP version used in the request.</p>\r\n</body>\r\n</html>\r\n"}
 };
 
@@ -71,6 +74,13 @@ typedef enum {
 	RECV_MORE,
 	READY
 } e_req_state;
+
+typedef enum {
+	GET,
+	POST,
+	DELETE,
+	ERR_METHOD
+} t_method;
 
 //class Request;
 //Response getResponse(std::string request, ServerConfig config, int status_code, Request *req_ref);
@@ -129,10 +139,13 @@ public:
 	LocationConfig 						getLocation();
 
 	bool								getIsCgi();
+	void								setIsCgi(bool new_state);
 
 	e_req_state							getState();
 
 	bool								getConnectionTypeIsClose();
+	std::string							getPostBodyFilename();
+	t_method							getMethod();
 
 private:
 	std::vector<ServerConfig>			_all_configs;

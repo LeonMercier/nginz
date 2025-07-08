@@ -228,7 +228,10 @@ void	Request::initialPost() {
 		std::cerr << std::endl;
 		// TODO: handle invalid value in content-length
 	}
-
+	if (_content_length == 0)
+	{
+		std::cout << "CONTENT-LENGTH = 0\n";
+	}
 	// client wants to send too big of a body
 	if (_config.client_max_body_size != 0
 		&& _content_length > _config.client_max_body_size) {
@@ -293,8 +296,32 @@ bool			Request::getIsCgi() {
 	return _is_cgi;
 }
 
+void	Request::setIsCgi(bool new_state) {
+	_is_cgi = new_state;
+}
+
 bool			Request::getConnectionTypeIsClose() {
 	return _connection_type_is_close;
+}
+
+std::string		Request::getPostBodyFilename(){
+	return _post_body_filename;
+}
+
+t_method			Request::getMethod(){
+	if (_method == "GET")
+	{
+		return GET;
+	}
+	if (_method == "POST")
+	{
+		return POST;
+	}
+	if (_method == "DELETE")
+	{
+		return DELETE;
+	}
+	return ERR_METHOD;
 }
 
 e_req_state	Request::getState() {
@@ -589,7 +616,7 @@ void	Request::respondPost() {
 }
 
 void Request::getResponse(int status_code) {
-	std::cout << "GETRESPONSE" << std::endl;
+	// std::cout << "GETRESPONSE" << std::endl;
 
 	if (status_code == 408) {
 		_status_code = status_code;

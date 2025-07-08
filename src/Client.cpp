@@ -68,6 +68,10 @@ void	Client::updateLastEvent()
 // TODO: incomplete header -> timeout
 void Client::recvFrom() {
 	//std::cout << "entered recvFrom" << std::endl;
+	if (state == IDLE)
+	{
+		state = RECV;
+	}
 	char buf[2000] = {0};
 
 	// TODO:: -1 really needed?
@@ -83,8 +87,7 @@ void Client::recvFrom() {
 	// this is possibly correct, i.e. EPOLLHUP is not needed because there is
 	// an event anyway when the client closes the connection
 	if (bytes_read == 0) {
-		std::cout << "recvFrom(): read 0 bytes" << std::endl;
-		// closeConnection(epoll_fd,fd);
+		// std::cout << "recvFrom(): read 0 bytes" << std::endl;
 		state = DISCONNECT;
 		return ;
 	}
@@ -121,11 +124,13 @@ void Client::recvFrom() {
 }
 
 void Client::sendTo() {
-	std::string to_send = "";
-	if (state == WAIT_CGI) {
-		std::cout << "DOING CGI" << std::endl;
+	if (_to_send.length() == 0 && state == WAIT_CGI) {
+		// std::cout << "DOING CGI" << std::endl;
 		t_cgi_state cgi_result = cgi.checkCgi(); // this has waitpid
 		if (cgi_result == CGI_READY) {
+			if (request.getMethod() == POST){
+				std::remove(request.getPostBodyFilename().c_str());
+			}
 			try {
 				Response tmp;
 				tmp.full_response = fileToString(cgi.output_filename);
@@ -135,9 +140,27 @@ void Client::sendTo() {
 			} catch (const std::ios_base::failure& e){
 				// TODO how to handle error from client?
 			}
-
+				state = SEND;
+			return ;
+		}
+		else if (cgi_result == CGI_TIMEOUT || cgi_result == CGI_FAILED)
+		{
+			std::cout << "Client::sendTo(): cgi timeout or fail" << std::endl;
+			try {
+				std::remove(cgi.output_filename.c_str());
+			} catch (...){}
+			try {
+				request.getResponse(504);
+				send_queue.push_back(request.getRes());
+			} catch (const std::ios_base::failure& e){
+				// TODO how to handle error from client?
+			}
 			state = SEND;
-		} else {
+			return ;
+		}
+		else
+		{
+			// keep waiting for CGI
 			return;
 		}
 	} else {
@@ -148,28 +171,29 @@ void Client::sendTo() {
 			return ;
 		}
 
-		if (to_send.empty()) {
-			to_send = send_queue.front().full_response;
+		if (_to_send.empty()) {
+			_to_send = send_queue.front().full_response;
 		}
 
 		// std::cout << "SENDING" << to_send <<std::endl;
-		int bytes_sent = send(fd, to_send.c_str(), to_send.length(), MSG_NOSIGNAL);
+		int bytes_sent = send(fd, _to_send.c_str(), _to_send.length(), MSG_NOSIGNAL);
 		if (bytes_sent < 0) {
 		// TODO: currently not throwing here because maybe this is not a fatal error
 			std::cerr << "send() returned -1" << std::endl;
 		}
 
-		to_send.erase(0, bytes_sent);
+		_to_send.erase(0, bytes_sent);
 
-		if (to_send.empty()) {
+		if (_to_send.empty()) {
+			// request.setIsCgi(false);
 			send_queue.erase(send_queue.begin());
 			if (send_queue.size() == 0) {
 				// we have sent all responses in the queue
 				if (request.getConnectionTypeIsClose() == true ) {
-					//closeConnection(epoll_fd, fd);
 					state = DISCONNECT;
 				} else { // nothing left to send
 					changeEpollMode(EPOLLIN);
+					request = Request(configs);
 					state = IDLE;
 				}
 			}
