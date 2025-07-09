@@ -11,6 +11,8 @@
     <img src="potato_chip.png" alt="My Potato Chip" />
     <img src="dip.png" alt="My Dip" />
     <img src="micro_chip.jpg" alt="My Micro Chip" />
+	<br>
+	<a href="subpage.html">This is a link</a>
 
 	<br>
 	<hr width="50%">
@@ -27,6 +29,7 @@
 	<br>
 
     <h2>Upload multiple different things</h2>
+		First button allows multiple files to be chosen, press SHIFT in the file picker
 	<form action="/uploads" method="post" enctype="multipart/form-data">
 	  <p><input type="text" name="text" value="text default">
 	  <p><input type="file" name="file1" multiple>
@@ -38,17 +41,6 @@
 	<hr width="50%">
 	<br>
 
-	<!-- Form with POST request -->
-    <h2>Submit a form</h2>
-	<form action="/submit" method="post">
-	  <label for="name">Name:</label>
-	  <input type="text" id="name" name="name" required>
-	  
-	  <label for="email">Email:</label>
-	  <input type="email" id="email" name="email" required>
-	  
-	  <input type="submit" value="Submit">
-	</form>
 
 	<!-- Form with GET request -->
     <h2>Search for something: CGI POST</h2>
@@ -67,6 +59,19 @@
     	<input type="submit" value="Go" />
 	</form>
 
+	<br>
+	<!-- Form with POST request -->
+    <h3>Submit a form: </h3>
+		Creates a POST with a string in the body, kinda pointless without CGI
+	<form action="/submit" method="post">
+	  <label for="name">Name:</label>
+	  <input type="text" id="name" name="name" required>
+	  
+	  <label for="email">Email:</label>
+	  <input type="email" id="email" name="email" required>
+	  
+	  <input type="submit" value="Submit">
+	</form>
 
 </body>
 </html>
