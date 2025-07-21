@@ -2,7 +2,7 @@
 
 #include "parse_header.hpp"
 #include "Webserv.hpp"
-#include "PostFile.hpp"
+#include "Multipart.hpp"
 
 const static int _MAX_URI_SIZE = 4096;
 
@@ -175,8 +175,7 @@ private:
 	bool								_receiving_chunked = false;
 
 	std::string							_post_body_filename;
-	std::vector<PostFile>				_post_file_uploads;
-	std::string							_multipart_tmp_filename;
+	Multipart							_multipart;
 
 	e_req_state							_state = RECV_HEADER;
 	size_t								_body_bytes_read = 0;
