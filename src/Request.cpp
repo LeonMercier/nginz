@@ -43,7 +43,7 @@ void	Request::addToRequest(std::string part) {
 		auto method = _headers.find("method");
 
 		// no method field
-		if (method == _headers.end()) {
+		if (method->second == "") {
 			std::cerr << "Request::addToRequest(): no method field" << std::endl;
 			handleCompleteRequest(400);
 			return ;
@@ -52,11 +52,7 @@ void	Request::addToRequest(std::string part) {
 			handleCompleteRequest(200);
 			return ;
 		}
-		else if (
-			method->second != "GET" &&
-			method->second != "POST" &&
-			method->second != "DELETE")
-		{
+		else if (method->second != "POST") {
 			std::cerr << "Request::addToRequest(): unknown method" << std::endl;
 			handleCompleteRequest(405);
 			return ;
@@ -542,11 +538,18 @@ bool Request::fileExtensionIsSupported(std::string &path) {
 }
 
 void Request::validateRequest() {
+
+	// is any part of the first request line missing
+	if (_method == "" || _path == "" || _version == "") {
+		_status_code = 400;
+	}
+	else if (_path.find("/../") != std::string::npos || endsWith(_path, "/..")) {
+		_status_code = 403;
+	}
 	// is it http version 1.1
-	if (_version != "HTTP/1.1") {
+	else if (_version != "HTTP/1.1") {
 		_status_code = 505;
 	}
-
 	// is the method supported by our server
 	else if (_method != "GET"
 		&& _method != "POST"
@@ -556,12 +559,12 @@ void Request::validateRequest() {
 	// is the method allowed in config
 	else if (methodIsNotAllowed())
 		_status_code = 405;
-	//is the location return code 301
+	//is the location return code 301 for redirection
 	else if (_location.return_code == 301) {
 		_response.redirect_path = _location.return_url;
 		_status_code = 301;
 	}
-	// is the path a file or directory
+	// is the path a directory
 	else if (std::filesystem::is_directory(_location.root + _path)) {
 		std::cout << "|  " << "is directory check in validation" << std::endl;
 		_is_directory = true;
@@ -570,6 +573,7 @@ void Request::validateRequest() {
 			_response.redirect_path = _path + '/';
 			_status_code = 301;
 		}
+		//check for extension type not supported for the location index
 		else if (_location.index != "" && !fileExtensionIsSupported(_location.index)) {
 			std::cout << "|  " << "Error for ext not supported  with index" << std::endl;
 			_status_code = 415;
