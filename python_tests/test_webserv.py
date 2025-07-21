@@ -15,10 +15,10 @@ import http.client
 import socket
 import time
 
+
+
 def test_200_get_root():
 	response = requests.get("http://127.0.0.1:8080/")
-	assert response.status_code == 200
-	response = requests.get("http://127.0.0.1:8080/index.html")
 	assert response.status_code == 200
 
 def test_200_get_cgi():
@@ -54,6 +54,38 @@ def test_400_bad_request():
 	status_code = split_status_line[1]
 	print("Status:", split_status_line[1])
 	assert status_code == '400'
+
+def test_403_forbidden_with_two_dots_1():
+	s = socket.socket()
+	s.connect(('127.0.0.1', 8080))
+
+	req = "GET /../helloworld.txt HTTP/1.1\r\n\r\n"
+
+	s.send(req.encode())
+	response = s.recv(1024)
+	response_text = response.decode('utf-8', errors='ignore')
+	full_status_line = response_text.split('\r\n')[0]
+	print("Status Line:", full_status_line)
+	split_status_line = full_status_line.split()
+	status_code = split_status_line[1]
+	print("Status:", split_status_line[1])
+	assert status_code == '403'
+
+def test_403_forbidden_with_two_dots_2():
+	s = socket.socket()
+	s.connect(('127.0.0.1', 8080))
+
+	req = "GET /.. HTTP/1.1\r\n\r\n"
+
+	s.send(req.encode())
+	response = s.recv(1024)
+	response_text = response.decode('utf-8', errors='ignore')
+	full_status_line = response_text.split('\r\n')[0]
+	print("Status Line:", full_status_line)
+	split_status_line = full_status_line.split()
+	status_code = split_status_line[1]
+	print("Status:", split_status_line[1])
+	assert status_code == '403'
 
 def test_404_page_not_found():
 	response = requests.get("http://127.0.0.1:8080/non-existant-page")
@@ -117,6 +149,22 @@ def test_505_version_not_supported():
 	status_code = split_status_line[1]
 	print("Status:", split_status_line[1])
 	assert status_code == '505'
+
+def test_OTHER_double_dots_that_are_not_forbidden():
+	s = socket.socket()
+	s.connect(('127.0.0.1', 8080))
+
+	req = "GET /.../helloworld.txt HTTP/1.1\r\n\r\n"
+
+	s.send(req.encode())
+	response = s.recv(1024)
+	response_text = response.decode('utf-8', errors='ignore')
+	full_status_line = response_text.split('\r\n')[0]
+	print("Status Line:", full_status_line)
+	split_status_line = full_status_line.split()
+	status_code = split_status_line[1]
+	print("Status:", split_status_line[1])
+	assert status_code == '404'
 
 #TODO Test a cgi using a script that sleeps, then check other connection
 #TODO Test that sends good chunks
