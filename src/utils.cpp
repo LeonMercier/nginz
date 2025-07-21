@@ -20,12 +20,22 @@ void removeEndSlash(std::string &str) {
 	}
 }
 
+static bool fileExists(std::string filename) {
+	std::ifstream file(filename.c_str());
+	return file.good();
+}
+
 std::string	generateTempFilename()
 {
 	std::string prefix = "/tmp/webserv_file_";
 	static int counter = 0;
+	
+	while (fileExists(prefix + std::to_string(counter))) {
+		counter++;
+	}
 	return (prefix + std::to_string(counter++));
 }
+
 std::string fileToString(std::string filename) {
 	std::ifstream file(filename, std::ios::binary);
 	if (!file.is_open()) {
