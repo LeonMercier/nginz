@@ -6,7 +6,7 @@ struct LocationConfig
 {
 	std::string	path;
 	std::string	root;
-	std::string	index;
+	std::string	index = "";
 	std::vector<std::string> methods;
 	bool		autoindex = false;
 	std::string	upload_store; // not sure if a good name

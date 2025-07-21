@@ -36,6 +36,9 @@ const std::map<std::string, std::string> extensions {
 };
 
 const std::map<int, std::string> errorCodes {
+	{100, "Continue"},					//Continue the request
+	{200, "OK"},						//OK
+	{201, "Created"},					//A new resource was created by POST
 	{301, "Moved Permanently"},			//Redirect error
 	{400, "Bad Request"},				//Malformed request syntax
 	{403, "Forbidden"}, 				//Understood the request but refused to fulfill it
@@ -45,6 +48,7 @@ const std::map<int, std::string> errorCodes {
 	{411, "Length Required"}, 			//Missing content length for a body in a request
 	{413, "Content Too Large"}, 		//Request content is too large. Terminate request or close connection
 	{414, "URI Too Long"}, 				//It's just tooooooo long
+	{415, "Unsupported Media Type"},	//Unsupported media type
 	{500, "Internal Server Error"}, 	//Generic response when the server itself has an error
 	{501, "Not Implemented"}, 			//Server does not support functionality. Includes method?
 	{503, "Service Unavailable"}, 		//Server down for too much traffic or maintenance
@@ -62,6 +66,7 @@ const std::map<int, std::string> errorHttps {
     {411, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>411 Length Required</title>\r\n</head>\r\n<body>\r\n<h1>411 Length Required</h1>\r\n<p>Requests must have a content length header.</p>\r\n</body>\r\n</html>\r\n"},
     {413, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>413 Payload Too Large</title>\r\n</head>\r\n<body>\r\n<h1>413 Payload Too Large</h1>\r\n<p>The request is larger than the server is willing or able to process.</p>\r\n</body>\r\n</html>\r\n"},
     {414, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>414 URI Too Long</title>\r\n</head>\r\n<body>\r\n<h1>414 URI Too Long</h1>\r\n<p>The URI provided was too long for the server to process.</p>\r\n</body>\r\n</html>\r\n"},
+	{415, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>415 - Unsupported Media Type</title>\r\n</head>\r\n<body>\r\n<h1>415 - Unsupported Media Type</h1>\r\n<p>The media format of the requested data is not supported.</p>\r\n</body\r\n</html>\r\n"},
     {500, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>500 Internal Server Error</title>\r\n</head>\r\n<body>\r\n<h1>500 Internal Server Error</h1>\r\n<p>The server was unable to complete your request. Please try again later.</p>\r\n</body>\r\n</html>\r\n"},
     {501, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>501 Not Implemented</title>\r\n</head>\r\n<body>\r\n<h1>501 Not Implemented</h1>\r\n<p>The server either does not recognize the request method, or it lacks the ability to fulfil the request.</p>\r\n</body>\r\n</html>\r\n"},
     {503, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>503 Service Unavailable</title>\r\n</head>\r\n<body>\r\n<h1>503 Service Unavailable</h1>\r\n<p>The server cannot handle the request because it is overloaded or down for maintenance.</p>\r\n</body>\r\n</html>\r\n"},
@@ -132,6 +137,7 @@ public:
 	void 								printRequest(); //Remove
 	void		 						handleChunked();
 	void								separateMultipart();
+	bool 								fileExtensionIsSupported(std::string &path);
 
 	//Getters
 	Response							getRes();

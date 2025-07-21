@@ -434,7 +434,7 @@ void Request::handleDelete()
 {
 	std::string	full_path;
 
-	// full_path = location.root + path;
+	// 
 	full_path = "./www/images/directory/example.txt"; // now hardcoded, later the version above.
 
 	std::cout << "path: " << _path << "\nroot: " << _location.root << std::endl;
@@ -459,9 +459,25 @@ void Request::handleDelete()
 	std::cout << "Deleted the file: " + full_path << std::endl;
 }
 
+
+
 void Request::handleGet() {
-	if (_path == "/") {
-		createBody(_location.root + "/index.html");
+	if (_path == "/" || (_location.autoindex == false && _is_directory == true)) {
+		if (_location.index != "") {
+			std::string temp = _location.root + "/" + _location.index;
+			std::cout << "|  " << "found a directory and not auto-index" << std::endl;
+			std::cout << "|  " << "COMBINED THING: " << temp << std::endl;
+			if (!std::filesystem::exists(temp)) {
+				std::cout << "|  " << "Does not exist" << std::endl;
+				handleError(404);
+			}
+			else {
+				std::cout << "|  " << "It exists so do it" << std::endl;
+				createBody(temp);
+			}
+		}
+		else
+			createBody(_location.root + "/index.html");
 		if (_status_code == 200)
 			createHeader("text/html; charset=UTF-8");
 	}
@@ -469,6 +485,11 @@ void Request::handleGet() {
 		getAutoIndex();
 	}
 	else {
+		if (!std::filesystem::exists(_location.root + _path)) {
+			std::cout << "|  " << "Does not exist 2" << std::endl;
+			handleError(404);
+			return ;
+		}
 		createBody(_location.root + _path);
 		if (_status_code == 200) {
 			for (auto& p : extensions) {
@@ -512,6 +533,17 @@ bool Request::methodIsNotAllowed() {
 	return false;
 }
 
+bool Request::fileExtensionIsSupported(std::string &path) {
+	//std::cout << "|  " << "path in file ext check = " << path << std::endl;
+	for (auto& p : extensions) {
+		//std::cout << "|  " << "p.first = " << p.first << std::endl;
+		if (endsWith(path, p.first)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void Request::validateRequest() {
 	// is it http version 1.1
 	if (_version != "HTTP/1.1") {
@@ -524,31 +556,29 @@ void Request::validateRequest() {
 		&& _method != "DELETE") {
 		_status_code = 501;
 	}
-
 	// is the method allowed in config
 	else if (methodIsNotAllowed())
 		_status_code = 405;
-
 	//is the location return code 301
 	else if (_location.return_code == 301) {
 		_response.redirect_path = _location.return_url;
 		_status_code = 301;
 	}
-
-	else if (_method == "POST") {
-		// TODO: be smarter
-		//yolo
-		return ;
-	}
 	// is the path a file or directory
 	else if (std::filesystem::is_directory(_location.root + _path)) {
+		std::cout << "|  " << "is directory check in validation" << std::endl;
 		_is_directory = true;
 		// check for redirect error
 		if (_path.back() != '/') {
 			_response.redirect_path = _path + '/';
 			_status_code = 301;
 		}
+		else if (_location.index != "" && !fileExtensionIsSupported(_location.index)) {
+			std::cout << "|  " << "Error for ext not supported  with index" << std::endl;
+			_status_code = 415;
+		}
 	}
+
 }
 
 void Request::initResponseStruct(int status_code) {
@@ -564,6 +594,8 @@ void Request::printRequest() {
 	std::cout << "|  " << "Method: " << _method << std::endl;
 	std::cout << "|  " << "Version: " << _version << std::endl;
 	std::cout << "|  " << "Status: " << _status_code << std::endl;
+	std::cout << "|  " << "Index: " << _location.index << std::endl;
+	std::cout << "|  " << "Root: " << _location.root << std::endl;
 	//std::cout << "|  " << "Location Path: " << location.path << std::endl;
 	//std::cout << "|  " << "Redirect Path: " << response.redirect_path << std::endl;
 	//std::cout << "|  " << "Is Directory: " << is_directory << std::endl;
@@ -575,7 +607,7 @@ void Request::printRequest() {
 }
 
 void Request::handleCgi() {
-	if (_location.cgi_path_py != "/usr/bin/python3")
+	if (_location.cgi_path_py == "")
 		handleError(400);
 	else
 		_is_cgi = true;
@@ -627,7 +659,6 @@ void Request::getResponse(int status_code) {
 		validateRequest();
 		std::cout << "|  " << "Status After Validation: " << _status_code << std::endl;
 	}
-
 	if (_status_code != 200) 
 		handleError(_status_code);
 	else if (endsWith(_path, ".py")){
