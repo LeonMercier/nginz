@@ -2,76 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>GOOD CHIPS</title>
+    <title>TESTING CHIPS</title>
     <link rel="icon" type="image/x-icon" href="potato_chip.png">
 </head>
-<body style="background-color:powderblue; text-align:center;">
+<body style="background-color:darkseagreen; text-align:center;">
     <h1>My Favorite Chips</h1>
     <h2>(and dips)</h2>
-    <img src="potato_chip.png" alt="My Potato Chip" />
-    <img src="dip.png" alt="My Dip" />
-    <img src="micro_chip.jpg" alt="My Micro Chip" />
-	<br>
-	<a href="subpage.html">This is a link</a>
-
-	<br>
-	<hr width="50%">
-	<br>
-
-    <h2>Upload a file</h2>
-    <form method="POST" action="/uploads/" enctype="multipart/form-data">
-        <input type="file" id="fileUpload" name="fileUpload">
-        <input type="submit" value="Upload">
-    </form>
-
-	<br>
-	<hr width="50%">
-	<br>
-
-    <h2>Upload multiple different things</h2>
-		First button allows multiple files to be chosen, press SHIFT in the file picker
-	<form action="/uploads" method="post" enctype="multipart/form-data">
-	  <p><input type="text" name="text" value="text default">
-	  <p><input type="file" name="file1" multiple>
-	  <p><input type="file" name="file2">
-	  <p><button type="submit">Submit</button>
-	</form>
-
-	<br>
-	<hr width="50%">
-	<br>
-
-
-	<!-- Form with GET request -->
-    <h2>Search for something: CGI POST</h2>
-	<form method="post" action="/cgi/search.py">
-    	<input type="search" name="query" placeholder="Search.." />
-    	<input type="search" name="category" placeholder="Category..." />
-    	<input type="submit" value="I\'m feeling lucky" />
-	</form>
-
-	<!-- GET with multiple fields -->
-    <h2>Who are you: CGI GET</h2>
-	<form method="get" action="/cgi/who.py">
-    	<input type="text" name="firstname" placeholder="First Name" />
-    	<input type="text" name="lastname" placeholder="Last Name" />
-    	<input type="text" name="favcolor" placeholder="Favourite color" />
-    	<input type="submit" value="Go" />
-	</form>
-
-	<br>
-	<!-- Form with POST request -->
-    <h3>Submit a form: </h3>
-		Creates a POST with a string in the body, kinda pointless without CGI
-	<form action="/submit" method="post">
-	  <label for="name">Name:</label>
-	  <input type="text" id="name" name="name" required>
-	  
-	  <label for="email">Email:</label>
-	  <input type="email" id="email" name="email" required>
-	  
-	  <input type="submit" value="Submit">
-	</form>
-
 </body>
 </html>
