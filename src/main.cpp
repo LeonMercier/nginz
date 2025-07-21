@@ -6,11 +6,15 @@
 int	main(int argc, char **argv)
 {
 	try {
-		std::vector<ServerConfig> server_configs = configParser((char *)"configuration/webserv.conf");
-		if (argc == 2)
-			 std::vector<ServerConfig> server_configs = configParser(argv[1]);
-		// TODO add error for too many args?
+		std::vector<ServerConfig> server_configs;
+		if (argc == 2) {
+			 server_configs = configParser(argv[1]);
+		} else {
+			std::cout << "main(): using default config file" << std::endl;
+			server_configs = configParser((char *)"configuration/webserv.conf");
+		}
 		eventLoop(server_configs);
+		// TODO add error for too many args?
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 		std::cout << "Type:    " << typeid(e).name() << "\n";

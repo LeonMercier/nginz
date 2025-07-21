@@ -58,7 +58,7 @@ void	Request::addToRequest(std::string part) {
 			method->second != "DELETE")
 		{
 			std::cerr << "Request::addToRequest(): unknown method" << std::endl;
-			handleCompleteRequest(400);
+			handleCompleteRequest(405);
 			return ;
 		}
 	}
@@ -631,6 +631,9 @@ void Request::getResponse(int status_code) {
 	if (_status_code != 200) 
 		handleError(_status_code);
 	else if (endsWith(_path, ".py")){
+		handleCgi();
+	}
+	else if (endsWith(_path, ".bla")){
 		handleCgi();
 	}
 	else if (_method == "GET")
