@@ -434,10 +434,8 @@ void Request::handleDelete()
 {
 	std::string	full_path;
 
-	// 
-	full_path = "./www/images/directory/example.txt"; // now hardcoded, later the version above.
-
-	std::cout << "path: " << _path << "\nroot: " << _location.root << std::endl;
+	full_path = _location.root + _path;
+	// std::cout << "path: " << full_path << std::endl;
 	try {
 		if (!std::ifstream(full_path)) {
 			throw std::runtime_error("Couldn't delete unexisting file: " + full_path);
@@ -458,7 +456,6 @@ void Request::handleDelete()
 	}
 	std::cout << "Deleted the file: " + full_path << std::endl;
 }
-
 
 
 void Request::handleGet() {
