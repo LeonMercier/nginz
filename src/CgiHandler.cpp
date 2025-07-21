@@ -1,4 +1,5 @@
 #include "../inc/CgiHandler.hpp"
+#include <stdexcept>
 
 t_cgi_state	CgiHandler::checkCgi()
 {
@@ -116,7 +117,14 @@ void	CgiHandler::launchCgi(Request &request)
 	// we have saved the post body into infile before
 	// close(input_fd); // move file position indicator to the beginning of the file stream by closing
 
-	std::string	executable = request.getLocation().cgi_path_py;
+	std::string	executable;
+	if (endsWith(request.getPath(), ".py")) {
+		executable = request.getLocation().cgi_path_py;
+	} else if (endsWith(request.getPath(), ".bla")) {
+		executable = request.getLocation().cgi_path_bla;
+	} else {
+		throw std::runtime_error("launchCgi(): request path ending unsupported");
+	}
 	std::string	script = request.getLocation().root + request.getPath();
 
 	// std::cout << "\n\nCGI_PATH: " << executable << "\n\nrequest.path: " << request.getPath() << "\n\nSCRIPT_PATH: " << script << std::endl;

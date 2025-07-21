@@ -13,6 +13,7 @@ struct LocationConfig
 	int			return_code = 0;
 	std::string return_url = "";
 	std::string	cgi_path_py = "";
+	std::string	cgi_path_bla = "";
 };
 
 struct ServerConfig
