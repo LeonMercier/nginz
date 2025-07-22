@@ -6,6 +6,7 @@
 #include "Webserv.hpp"
 #include "PostFile.hpp"
 
+const static int _MAX_URI_SIZE = 4096;
 
 const std::map<std::string, std::string> extensions {
 	{".aac", "audio/aac"},
@@ -57,6 +58,7 @@ const std::map<int, std::string> errorCodes {
 };
 
 const std::map<int, std::string> errorHttps {
+	{201, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>201 Created</title>\r\n</head>\r\n<body>\r\n<h1>201 Created</h1>\r\n<p>The request succeeded, and a new resource was created.</p>\r\n</body>\r\n</html>"},
 	{301, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>301 Moved Permanently</title>\r\n</head>\r\n<body>\r\n<h1>301 Moved Permanently</h1>\r\n<p>The requested document has moved permanently.</p>\r\n</body>\r\n</html>"},
     {400, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>400 Bad Request</title>\r\n</head>\r\n<body>\r\n<h1>400 Bad Request</h1>\r\n<p>Request body could not be read properly.</p>\r\n</body>\r\n</html>\r\n"},
     {403, "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n<title>403 Forbidden</title>\r\n</head>\r\n<body>\r\n<h1>403 Forbidden</h1>\r\n<p>You don't have permission to access the resource.</p>\r\n</body>\r\n</html>\r\n"},
@@ -118,7 +120,6 @@ public:
 
 	bool								headerIsComplete();
 	void								getResponse(int status_code);
-	int									getPostContentLength (std::string request);
 	//bool								isPostAllowed(std::string path, ServerConfig config);
 	void								validateRequest();
 	void								checkLocation();
