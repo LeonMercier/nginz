@@ -13,6 +13,8 @@ int	main(int argc, char **argv)
 			std::cout << "main(): using default config file" << std::endl;
 			server_configs = configParser((char *)"configuration/webserv.conf");
 		}
+		// signal(SIGINT, handle_signal);
+		// signal(SIGTERM, handle_signal);
 		eventLoop(server_configs);
 		// TODO add error for too many args?
 	} catch (std::exception &e) {

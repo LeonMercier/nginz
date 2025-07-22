@@ -2,6 +2,8 @@
 #include "../inc/Structs.hpp"
 #include "../inc/Client.hpp"
 
+std::atomic<bool> signal_stop(false);
+
 static void createServerSocket(
 	int epoll_fd,
 	std::map<int, std::vector<ServerConfig>> &servers,
@@ -116,6 +118,30 @@ static void	checkClientTimeout(std::map<int, Client> &clients)
 	}
 }
 
+void	handle_signal(int sig)
+{
+	if (sig == SIGINT || sig == SIGTERM)
+	{
+		std::cout << "\nWebserver terminated by user" << std::endl;
+		signal_stop = true;
+	}
+}
+
+void	close_fds(std::map<int, Client> &clients, std::map<int, std::vector<ServerConfig>> &servers)
+{
+	for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); it++)
+	{
+		std::cout << "\nClosing client fd: " << it->second.getClientFd() << std::endl;
+		close(it->second.getClientFd());
+	}
+
+	for (auto it = servers.begin(); it != servers.end(); it++)
+	{
+		std::cout << "Closing server socket: " << it->first << std::endl;
+		close(it->first);
+	}
+}
+
 int eventLoop(std::vector<ServerConfig> server_configs)
 {
 	std::map<std::string, std::vector<ServerConfig>> per_socket_configs =
@@ -135,6 +161,8 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 	// using client_fd as index (but also storing it inside the class for now)
 	std::map<int, Client> clients;
 
+	signal(SIGINT, handle_signal);
+	signal(SIGTERM, handle_signal);
 	while (true)
 	{
 		checkClientTimeout(clients);
@@ -143,6 +171,11 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 		int ready = epoll_wait(epoll_fd, events, 64, 1000);
 		// time = std::time(nullptr);
 		// std::cout << "Time after epoll_wait: " << std::asctime(std::localtime(&time)) << std::endl;
+		if (signal_stop)
+		{
+			close_fds(clients, servers);
+			break ;
+		}
 		if (ready < 0) { throw std::runtime_error("epoll_wait() failed"); };
 		if (ready == 0)
 			continue;
@@ -151,7 +184,7 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 			int curr_event_fd = events[i].data.fd;
 
 			// fd of current event is an index of servers => new connection
-			if (servers.find(curr_event_fd) != servers.end())
+			if (servers.find(curr_event_fd) != servers.end() && !signal_stop)
 			// if (curr_event_fd == socket_fd) // new connection
 			{
 				struct sockaddr_in client;

@@ -4,4 +4,6 @@
 #include "Structs.hpp"
 
 const static int _CLIENT_TIMEOUT_S = 10;
-int eventLoop(std::vector<ServerConfig>);
+
+int		eventLoop(std::vector<ServerConfig>);
+void	handle_signal(int sig);
