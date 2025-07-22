@@ -1,5 +1,20 @@
 #include "../inc/parse_header.hpp"
 
+void	encodeQuery(std::string &query)
+{
+	std::size_t pos = 0;
+	pos = query.find_first_of("+");
+// Separate handling for spaced as they might be encoded with '+' instead of '%...'
+// right now only implemented for one space to test
+	if (pos != std::string::npos)
+	{
+		std::cout << "IN HEADER PARSING, WE HAVE FOUND ENCODED SPACE" << std::endl;
+		query.replace(pos, 1, " ");
+	}
+// for % implementation TOMORROW
+
+}
+
 std::map<std::string, std::string> parseHeader(std::string request) {
 	std::map<std::string, std::string> result;
 	std::istringstream iss(request);
@@ -12,6 +27,9 @@ std::map<std::string, std::string> parseHeader(std::string request) {
 	if (path.find('?') != std::string::npos) {
 		std::string form_path = path.substr(0, path.find('?'));
 		std::string query_string = path.substr(path.find('?') + 1);
+
+		encodeQuery(query_string);
+
 		result.insert(std::pair<std::string, std::string>("path", form_path));
 		result.insert(std::pair<std::string, std::string>("query_string", query_string));
 	}
@@ -43,9 +61,9 @@ std::map<std::string, std::string> parseHeader(std::string request) {
 			}
 		}
 	}
-	// for (auto& p : result) {
-	// 	std::cout << ">>>" << p.first << " -- " << p.second << std::endl;
-	// }
+	for (auto& p : result) {
+		std::cout << ">>>" << p.first << " -- " << p.second << std::endl;
+	}
 
 	return result;
 }
