@@ -1,33 +1,60 @@
 #include "../inc/parse_header.hpp"
 
+void	hexadecimalToAscii(std::string &hex)
+{
+	std::stringstream ss;
+	char c = stoi(hex, nullptr, 16);
+	ss << c;
+	hex = ss.str();
+}
+
 void	encodeQuery(std::string &query)
 {
-	std::size_t pos = 0;
-	pos = query.find_first_of("+");
-// Separate handling for spaced as they might be encoded with '+' instead of '%...'
-// right now only implemented for one space to test
-	if (pos != std::string::npos)
-	{
-		std::cout << "IN HEADER PARSING, WE HAVE FOUND ENCODED SPACE" << std::endl;
-		query.replace(pos, 1, " ");
-	}
-// for % implementation TOMORROW
+	std::cout << "\n\nQuery before encoding: " << query << std::endl;
 
+	std::size_t pos = 0;
+
+	// Separate handling for spaced as in query they are encoded with '+' instead of '%...'
+	pos = query.find_first_of("+");
+	while (pos != std::string::npos)
+	{
+		query.replace(pos, 1, " ");
+		pos = query.find_first_of("+");
+	}
+
+	pos = 0;
+	while ((pos = query.find_first_of("%", pos)) != std::string::npos)
+	{
+		if (pos + 2 >= query.length())
+		{
+			break ;
+		}
+		std::string temp = query.substr(pos + 1, 2);
+		if (temp != "26"){
+			hexadecimalToAscii(temp);
+			query.replace(pos, 3, temp);
+		}
+		else
+		{
+			pos += 3;
+		}
+	}
+	std::cout << "\n\nQuery after encoding: " << query << std::endl;
 }
 
 void	encodePath(std::string &path)
 {
 	std::size_t pos = 0;
-	pos = path.find_first_of("+");
-// Separate handling for spaced as they might be encoded with '+' instead of '%...'
-// right now only implemented for one space to test
-	if (pos != std::string::npos)
+	while ((pos = path.find_first_of("%", pos)) != std::string::npos)
 	{
-		std::cout << "IN HEADER PARSING, WE HAVE FOUND ENCODED SPACE" << std::endl;
-		path.replace(pos, 1, " ");
+		if (pos + 2 >= path.length())
+		{
+			break ;
+		}
+		std::string temp = path.substr(pos + 1, 2);
+		hexadecimalToAscii(temp);
+		path.replace(pos, 3, temp);
 	}
-// for % implementation TOMORROW
-
 }
 
 std::map<std::string, std::string> parseHeader(std::string request) {
