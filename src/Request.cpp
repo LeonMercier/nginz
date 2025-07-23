@@ -12,7 +12,12 @@ void	Request::addToRequest(std::string part) {
 	// std::cout << "addToRequest()" << std::endl;
 	// std::cout << part << std::endl;
 
-	_raw_request += std::string(part);
+	try {
+		_raw_request += std::string(part);
+	} catch (...) {
+		handleCompleteRequest(413);
+		return ;
+	}
 
 	if (_receiving_chunked) {
 		handleChunked();
@@ -217,13 +222,25 @@ void	Request::initialPost() {
 
 	// has content length
 	_content_length = 0;
+	long temp = 0;
 	try {
-		_content_length = std::stoul(_headers.at("content-length"));
+		temp = std::stol(_headers.at("content-length"));
+		std::cout << "|  " << "TEMP_LENGTH = " << temp << std::endl;
 	} catch (...) {
 		std::cerr << "Client::handlePost(): failed to parse Content-Length";
 		std::cerr << std::endl;
-		// TODO: handle invalid value in content-length
+		handleCompleteRequest(400);
+		return ;
 	}
+	if (temp < 0) {
+		std::cout << "|  " << "WTFOMG!!!!!!" << std::endl;
+		handleCompleteRequest(400);
+		return ;
+	}
+	else {
+		_content_length = (size_t)temp;
+	}
+	std::cout << "|  " << "CONTENT_LENGTH = " << temp << std::endl;
 	if (_content_length == 0)
 	{
 		std::cout << "CONTENT-LENGTH = 0\n";
@@ -320,19 +337,6 @@ t_method			Request::getMethod(){
 
 e_req_state	Request::getState() {
 	return _state;
-}
-
-int Request::getPostContentLength (std::string request) {
-	std::istringstream iss(request);
-	std::string temp;
-	int result = 0;
-	while (getline(iss, temp)) {
-		if (temp.find("Content-Length:") != std::string::npos) {
-			result = stoi(temp.substr(16));
-			break;
-		}
-	}
-	return (result);
 }
 
 // bool Request::isPostAllowed(std::string path, ServerConfig config) {
@@ -541,42 +545,45 @@ void Request::validateRequest() {
 
 	// is any part of the first request line missing
 	if (_method == "" || _path == "" || _version == "") {
-		_status_code = 400;
+		handleError(400);
 	}
 	else if (_path.find("/../") != std::string::npos || endsWith(_path, "/..")) {
-		_status_code = 403;
+		handleError(403);
+	}
+	else if (_path.size() > _MAX_URI_SIZE) {
+		handleError(414);
 	}
 	// is it http version 1.1
 	else if (_version != "HTTP/1.1") {
-		_status_code = 505;
+		handleError(505);
 	}
 	// is the method supported by our server
 	else if (_method != "GET"
 		&& _method != "POST"
 		&& _method != "DELETE") {
-		_status_code = 501;
+		handleError(501);
 	}
 	// is the method allowed in config
 	else if (methodIsNotAllowed())
-		_status_code = 405;
+		handleError(405);
 	//is the location return code 301 for redirection
 	else if (_location.return_code == 301) {
 		_response.redirect_path = _location.return_url;
-		_status_code = 301;
+		handleError(301);
 	}
 	// is the path a directory
 	else if (std::filesystem::is_directory(_location.root + _path)) {
 		std::cout << "|  " << "is directory check in validation" << std::endl;
 		_is_directory = true;
 		// check for redirect error
-		if (_path.back() != '/') {
+		if (_path.back() != '/' && _method != "POST") {
 			_response.redirect_path = _path + '/';
-			_status_code = 301;
+			handleError(301);
 		}
 		//check for extension type not supported for the location index
 		else if (_location.index != "" && !fileExtensionIsSupported(_location.index)) {
 			std::cout << "|  " << "Error for ext not supported  with index" << std::endl;
-			_status_code = 415;
+			handleError(415);
 		}
 	}
 
@@ -649,25 +656,21 @@ void	Request::respondPost() {
 void Request::getResponse(int status_code) {
 	// std::cout << "GETRESPONSE" << std::endl;
 
-	if (status_code == 408) {
-		_status_code = status_code;
+	if (status_code != 200) {
 		handleError(status_code);
 		_response.full_response = _response.header + _response.body;
 		return ;
 	}
 	initResponseStruct(status_code);
-	if (_status_code == 200) {
-		validateRequest();
-		std::cout << "|  " << "Status After Validation: " << _status_code << std::endl;
+	validateRequest();
+	if (_status_code != 200) {
+		_response.full_response = _response.header + _response.body;
+		return ;
 	}
-	if (_status_code != 200) 
-		handleError(_status_code);
-	else if (endsWith(_path, ".py")){
+	else if (endsWith(_path, ".py"))
 		handleCgi();
-	}
-	else if (endsWith(_path, ".bla")){
+	else if (endsWith(_path, ".bla"))
 		handleCgi();
-	}
 	else if (_method == "GET")
 		handleGet();
 	else if (_method == "POST")
