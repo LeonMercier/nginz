@@ -2,15 +2,24 @@
 
 void	hexadecimalToAscii(std::string &hex)
 {
+	// std::cout << "\nhex: " << hex << std::endl;
 	std::stringstream ss;
-	char c = stoi(hex, nullptr, 16);
-	ss << c;
-	hex = ss.str();
+	try {
+
+		char c = stoi(hex, nullptr, 16);
+		ss << c;
+		hex = ss.str();
+	}
+	catch (std::exception &e)
+	{
+		std::cout << "In request parsing: hexadecimalToAscii for " << hex << ": " << e.what() << std::endl;
+	}
+	// std::cout << "\nHex after hex to ascii: " << hex << std::endl;
 }
 
 void	encodeQuery(std::string &query)
 {
-	std::cout << "\n\nQuery before encoding: " << query << std::endl;
+	// std::cout << "\n\nQuery before encoding: " << query << std::endl;
 
 	std::size_t pos = 0;
 
@@ -25,21 +34,27 @@ void	encodeQuery(std::string &query)
 	pos = 0;
 	while ((pos = query.find_first_of("%", pos)) != std::string::npos)
 	{
-		if (pos + 2 >= query.length())
+		if (pos + 3 >= query.length())
 		{
 			break ;
 		}
 		std::string temp = query.substr(pos + 1, 2);
 		if (temp != "26"){
+			// std::cout << "\ntemp: " << temp << std::endl;
 			hexadecimalToAscii(temp);
 			query.replace(pos, 3, temp);
 		}
 		else
 		{
 			pos += 3;
+			continue ;
+		}
+		if (temp == "%")
+		{
+			pos += 1;
 		}
 	}
-	std::cout << "\n\nQuery after encoding: " << query << std::endl;
+	// std::cout << "\n\nQuery after encoding: " << query << std::endl;
 }
 
 void	encodePath(std::string &path)
@@ -55,6 +70,7 @@ void	encodePath(std::string &path)
 		hexadecimalToAscii(temp);
 		path.replace(pos, 3, temp);
 	}
+	// std::cout << "\n\nPath after encoding: " << path << std::endl;
 }
 
 std::map<std::string, std::string> parseHeader(std::string request) {
@@ -75,8 +91,10 @@ std::map<std::string, std::string> parseHeader(std::string request) {
 		result.insert(std::pair<std::string, std::string>("path", form_path));
 		result.insert(std::pair<std::string, std::string>("query_string", query_string));
 	}
-	else
+	else{
+		encodePath(path);
 		result.insert(std::pair<std::string, std::string>("path", path));
+	}
 
 	result.insert(std::pair<std::string, std::string>("method", method));
 	result.insert(std::pair<std::string, std::string>("version", version));
@@ -103,9 +121,9 @@ std::map<std::string, std::string> parseHeader(std::string request) {
 			}
 		}
 	}
-	for (auto& p : result) {
-		std::cout << ">>>" << p.first << " -- " << p.second << std::endl;
-	}
+	// for (auto& p : result) {
+	// 	std::cout << ">>>" << p.first << " -- " << p.second << std::endl;
+	// }
 
 	return result;
 }
