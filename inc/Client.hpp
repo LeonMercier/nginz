@@ -1,7 +1,6 @@
 #pragma once
 
-#include "StandardLibraries.hpp"
-#include "Structs.hpp"
+#include "Webserv.hpp"
 #include "parse_header.hpp"
 #include "Request.hpp"
 #include "CgiHandler.hpp"

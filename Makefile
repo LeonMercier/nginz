@@ -27,6 +27,7 @@ SOURCES = src/main.cpp \
 			src/event_loop.cpp \
 			src/parse_header.cpp \
 			src/Request.cpp \
+			src/Signal.cpp \
 			src/utils.cpp
 			
 TOTAL := $(words $(SOURCES))

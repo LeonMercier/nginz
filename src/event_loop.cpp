@@ -1,8 +1,7 @@
 #include "../inc/event_loop.hpp"
 #include "../inc/Structs.hpp"
 #include "../inc/Client.hpp"
-
-std::atomic<bool> signal_stop(false);
+#include "../inc/Signal.hpp"
 
 static void createServerSocket(
 	int epoll_fd,
@@ -200,7 +199,7 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 				if (retval.second == false) {
 					throw std::runtime_error("failed to add new client; \
 							  client already exists?");
-				}
+				} // DO WE WANT TO STOP RUNNING?
 
 				// epoll_ctl() takes information from e_event and puts it into
 				// the data structures held in the kernel, that is why we can
@@ -232,8 +231,6 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 					clients.erase(curr_event_fd);
 					continue;
 				}
-
-				// map::at() will throw std::out_of_range if not found
 				if (events[i].events & EPOLLIN) {
 					curr_client.recvFrom();
 				}
@@ -244,7 +241,6 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 					else{
 						std::cout << "\nSENDING TIMEOUT HEADER TO CLIENT:" 
 							<< curr_client.getClientFd() << std::endl;
-						// maybe front instead of back
 						curr_client.request.getResponse(408);
 						curr_client.send_queue.push_back(curr_client.request.getRes());
 						std::cout << "After creating send_que vector\n";
@@ -256,12 +252,9 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 						curr_client.setState(DISCONNECT);
 					}
 				}
-
 			}
 		}
 	}
-	// close(e_event.data.fd);
-	// close(socket_fd);
 	close(epoll_fd);
 	return 0;
 }

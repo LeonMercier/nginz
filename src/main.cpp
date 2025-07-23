@@ -5,6 +5,11 @@
 
 int	main(int argc, char **argv)
 {
+	if (argc > 2)
+	{
+		std::cout << "launch with './webserv path/to/configutarionfile.conf'" << std::endl;
+		return (0);
+	}
 	try {
 		std::vector<ServerConfig> server_configs;
 		if (argc == 2) {
@@ -13,10 +18,7 @@ int	main(int argc, char **argv)
 			std::cout << "main(): using default config file" << std::endl;
 			server_configs = configParser((char *)"configuration/webserv.conf");
 		}
-		// signal(SIGINT, handle_signal);
-		// signal(SIGTERM, handle_signal);
 		eventLoop(server_configs);
-		// TODO add error for too many args?
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
 		std::cout << "Type:    " << typeid(e).name() << "\n";
