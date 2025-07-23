@@ -1,5 +1,78 @@
 #include "../inc/parse_header.hpp"
 
+void	hexadecimalToAscii(std::string &hex)
+{
+	// std::cout << "\nhex: " << hex << std::endl;
+	std::stringstream ss;
+	try {
+
+		char c = stoi(hex, nullptr, 16);
+		ss << c;
+		hex = ss.str();
+	}
+	catch (std::exception &e)
+	{
+		std::cout << "In request parsing: hexadecimalToAscii for " << hex << ": " << e.what() << std::endl;
+	}
+	// std::cout << "\nHex after hex to ascii: " << hex << std::endl;
+}
+
+void	encodeQuery(std::string &query)
+{
+	// std::cout << "\n\nQuery before encoding: " << query << std::endl;
+
+	std::size_t pos = 0;
+
+	// Separate handling for spaced as in query they are encoded with '+' instead of '%...'
+	pos = query.find_first_of("+");
+	while (pos != std::string::npos)
+	{
+		query.replace(pos, 1, " ");
+		pos = query.find_first_of("+");
+	}
+
+	pos = 0;
+	while ((pos = query.find_first_of("%", pos)) != std::string::npos)
+	{
+		if (pos + 3 >= query.length())
+		{
+			break ;
+		}
+		std::string temp = query.substr(pos + 1, 2);
+		if (temp != "26"){
+			// std::cout << "\ntemp: " << temp << std::endl;
+			hexadecimalToAscii(temp);
+			query.replace(pos, 3, temp);
+		}
+		else
+		{
+			pos += 3;
+			continue ;
+		}
+		if (temp == "%")
+		{
+			pos += 1;
+		}
+	}
+	// std::cout << "\n\nQuery after encoding: " << query << std::endl;
+}
+
+void	encodePath(std::string &path)
+{
+	std::size_t pos = 0;
+	while ((pos = path.find_first_of("%", pos)) != std::string::npos)
+	{
+		if (pos + 2 >= path.length())
+		{
+			break ;
+		}
+		std::string temp = path.substr(pos + 1, 2);
+		hexadecimalToAscii(temp);
+		path.replace(pos, 3, temp);
+	}
+	// std::cout << "\n\nPath after encoding: " << path << std::endl;
+}
+
 std::map<std::string, std::string> parseHeader(std::string request) {
 	std::map<std::string, std::string> result;
 	std::istringstream iss(request);
@@ -12,11 +85,16 @@ std::map<std::string, std::string> parseHeader(std::string request) {
 	if (path.find('?') != std::string::npos) {
 		std::string form_path = path.substr(0, path.find('?'));
 		std::string query_string = path.substr(path.find('?') + 1);
+		
+		encodePath(form_path);
+		encodeQuery(query_string);
 		result.insert(std::pair<std::string, std::string>("path", form_path));
 		result.insert(std::pair<std::string, std::string>("query_string", query_string));
 	}
-	else
+	else{
+		encodePath(path);
 		result.insert(std::pair<std::string, std::string>("path", path));
+	}
 
 	result.insert(std::pair<std::string, std::string>("method", method));
 	result.insert(std::pair<std::string, std::string>("version", version));
