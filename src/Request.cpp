@@ -587,9 +587,17 @@ void Request::validateRequest() {
 		}
 		//check for extension type not supported for the location index
 		else if (_location.index != "" && !fileExtensionIsSupported(_location.index)) {
-			std::cout << "|  " << "Error for ext not supported  with index" << std::endl;
+			std::cout << "|  " << "Error for ext not supported in directory for index" << std::endl;
 			handleError(415);
 		}
+	}
+	else if (!std::filesystem::exists(_location.root + _path)) {
+		handleError(404);
+	}
+	//check for extension type not supported
+	else if (!fileExtensionIsSupported(_path)) {
+		std::cout << "|  " << "Error for ext not supported" << std::endl;
+		handleError(415);
 	}
 
 }
