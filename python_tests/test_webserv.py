@@ -344,7 +344,7 @@ def test_413_post_with_body_too_large():
 	s = socket.socket()
 	s.connect(('127.0.0.1', 8080))
 
-	a = "POST /uploads/ HTTP/1.1\r\nContent-Length: 9999999\r\n\r\n"
+	a = "POST /uploads/ HTTP/1.1\r\nContent-Length: 999999999\r\n\r\n"
 	b = "x" * 10000
 
 	req = a + b
