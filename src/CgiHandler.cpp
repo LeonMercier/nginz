@@ -22,6 +22,7 @@ t_cgi_state	CgiHandler::checkCgi()
 			}
 		}
 		std::cout << "CGI script exited succesfully" << std::endl;
+		
 		// std::cout << "\n\nCGI_READY, OUTPUT:\n" << std::endl;
 		//
 		// std::fstream fafa(output_filename);
@@ -36,7 +37,6 @@ t_cgi_state	CgiHandler::checkCgi()
 	return (CGI_WAITING);
 }
 
-// make a getter to CGI's type (Python) {}
 
 void	getCgiEnv(Request &request, const ServerConfig &config, std::vector<char*> &envp, std::vector<std::string> &envVars)
 {
@@ -50,8 +50,8 @@ void	getCgiEnv(Request &request, const ServerConfig &config, std::vector<char*> 
 	std::string pathInfo = "PATH_INFO=";
 	std::string scriptName = "SCRIPT_NAME=" + request.getLocation().root;
 	std::string	serverPort = "SERVER_PORT=" + std::to_string(config.listen_port);
-	std::string serverName = "SERVER_NAME=" + config.server_names[0]; // or should we just put IP here? we might have multiple names I'm confutse
-	std::string remoteAddr = "REMOTE_ADDR=" + config.listen_ip; // "The IP address of remote host", should this really be us?
+	std::string serverName = "SERVER_NAME=" + config.server_names[0];
+	std::string remoteAddr = "REMOTE_ADDR=" + config.listen_ip;
 	std::string serverProtocol = "SERVER_PROTOCOL=HTTP/1.1";
 	std::string redirectStatus = "REDIRECT_STATUS=200";
 	std::string gatewayInterface = "GATEWAY_INTERFACE=CGI/1.1";
@@ -122,19 +122,15 @@ void	CgiHandler::launchCgi(Request &request)
 	std::string	executable = request.getLocation().cgi_path_py;
 	std::string	script = request.getLocation().root + request.getPath();
 
-	// std::cout << "\n\nCGI_PATH: " << executable << "\n\nrequest.path: " << request.getPath() << "\n\nSCRIPT_PATH: " << script << std::endl;
-
 	char *argv[] = {
 		(char*)executable.c_str(),
 		(char*)script.c_str(),
 		nullptr
 	};
 
-	// std::cout << "\n\n\n\nCGIHANDLER\n\n\n\n";
 	int pid = fork();
 
 	if (pid < 0) {
-		// close(input_fd);
 		close(output_fd);
 		throw std::runtime_error("fork() failed");
 	}
@@ -148,7 +144,6 @@ void	CgiHandler::launchCgi(Request &request)
 		dup2(output_fd, STDOUT_FILENO);
 		close(output_fd);
 		execve(argv[0], argv, envp.data());
-		// _state = CGI_FAILED;
 		// throw std::runtime_error("CGI: execve failed");
 	}
 	else {
