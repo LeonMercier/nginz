@@ -148,8 +148,8 @@ void	CgiHandler::launchCgi(Request &request)
 		dup2(output_fd, STDOUT_FILENO);
 		close(output_fd);
 		execve(argv[0], argv, envp.data());
-		_state = CGI_FAILED;
-		throw std::runtime_error("CGI: execve failed");
+		// _state = CGI_FAILED;
+		// throw std::runtime_error("CGI: execve failed");
 	}
 	else {
 		_start_time = std::time(nullptr);
