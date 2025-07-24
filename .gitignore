@@ -6,3 +6,4 @@ ethan_notes.txt
 obj/
 compile_commands.json
 .cache/
+python_tests/__pycache__/

@@ -411,7 +411,10 @@ void Request::createHeader(std::string content_type) {
 	"Content-Length: " + std::to_string(_response.body.length()) + "\r\n"
 	"Cache-Control: no-cache, private\r\n";
 
-	if (_status_code == 301) {
+	if (_status_code == 201) {
+		_response.header += "Location: " + _location.root + _path + "\r\n";
+	} 
+	else if (_status_code == 301) {
 		_response.header += "Location: " + _response.redirect_path + "\r\n";
 	}
 	else if (_status_code == 408) {
@@ -659,6 +662,7 @@ void	Request::respondPost() {
 		}
 	}
 	// TODO:create the actual response
+	handleError(201);
 }
 
 void Request::getResponse(int status_code) {
