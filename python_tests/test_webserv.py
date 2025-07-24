@@ -87,6 +87,22 @@ def test_200_malformed_host_checks_for_any_host():
 	print("Status:", split_status_line[1])
 	assert status_code == '200'
 
+def test_200_supported_filetype():
+	s = socket.socket()
+	s.connect(('127.0.0.1', 8080))
+
+	req = "GET /uploads/example.txt HTTP/1.1\r\n\r\n"
+
+	s.send(req.encode())
+	response = s.recv(1024)
+	response_text = response.decode('utf-8', errors='ignore')
+	full_status_line = response_text.split('\r\n')[0]
+	print("Status Line:", full_status_line)
+	split_status_line = full_status_line.split()
+	status_code = split_status_line[1]
+	print("Status:", split_status_line[1])
+	assert status_code == '200'
+
 def test_301_redirect_when_missing_trailing_slash():
 	response = requests.get("http://127.0.0.1:8080/images", allow_redirects=False)
 	assert response.status_code == 301
@@ -185,6 +201,22 @@ def test_404_page_not_found():
 	response = requests.get("http://127.0.0.1:8080/non-existant-page")
 	assert response.status_code == 404
 
+def test_404_unsupported_filetype_that_does_not_exist():
+	s = socket.socket()
+	s.connect(('127.0.0.1', 8080))
+
+	req = "GET /uploads/nothing.badfiletype HTTP/1.1\r\n\r\n"
+
+	s.send(req.encode())
+	response = s.recv(1024)
+	response_text = response.decode('utf-8', errors='ignore')
+	full_status_line = response_text.split('\r\n')[0]
+	print("Status Line:", full_status_line)
+	split_status_line = full_status_line.split()
+	status_code = split_status_line[1]
+	print("Status:", split_status_line[1])
+	assert status_code == '404'
+
 def test_405_method_not_allowed():
 	response = requests.put("http://127.0.0.1:8080/")
 	assert response.status_code == 405
@@ -219,6 +251,22 @@ def test_414_uri_too_long():
 	temp_str = "x" * 10000
 	response = requests.get("http://127.0.0.1:8080/" + temp_str)
 	assert response.status_code == 414
+
+def test_415_unsupported_filetype_1():
+	s = socket.socket()
+	s.connect(('127.0.0.1', 8080))
+
+	req = "GET /uploads/main.cpp HTTP/1.1\r\n\r\n"
+
+	s.send(req.encode())
+	response = s.recv(1024)
+	response_text = response.decode('utf-8', errors='ignore')
+	full_status_line = response_text.split('\r\n')[0]
+	print("Status Line:", full_status_line)
+	split_status_line = full_status_line.split()
+	status_code = split_status_line[1]
+	print("Status:", split_status_line[1])
+	assert status_code == '415'
 
 def test_500_cgi_with_crash():
 	response = requests.get("http://127.0.0.1:8080/cgi/crash.py?firstname=first&lastname=last&favcolor=color")
@@ -291,6 +339,25 @@ def test_timeout_on_post():
 	status_code = split_status_line[1]
 	print("Status:", split_status_line[1])
 	assert status_code == '408'
+
+def test_413_post_with_body_too_large():
+	s = socket.socket()
+	s.connect(('127.0.0.1', 8080))
+
+	a = "POST /uploads/ HTTP/1.1\r\nContent-Length: 9999999\r\n\r\n"
+	b = "x" * 10000
+
+	req = a + b
+
+	s.send(req.encode())
+	response = s.recv(1024)
+	response_text = response.decode('utf-8', errors='ignore')
+	full_status_line = response_text.split('\r\n')[0]
+	print("Status Line:", full_status_line)
+	split_status_line = full_status_line.split()
+	status_code = split_status_line[1]
+	print("Status:", split_status_line[1])
+	assert status_code == '413'
 
 def test_201_post_without_cgi():
 	s = socket.socket()
