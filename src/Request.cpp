@@ -31,14 +31,20 @@ void	Request::addToRequest(std::string part) {
 	if (_state == RECV_HEADER) {
 		if (!headerIsComplete()) {
 			std::cout << "TRY TO RECEIVE MORE HEADER" << std::endl;
-			// TODO: prevent client from sending an infinitely long header
+			if (_raw_request.length() > 8192) {
+				handleCompleteRequest(413);
+			}
 			return ;
 		}
 		_state = RECV_BODY;
 		size_t body_start =
 			_raw_request.find(header_terminator) + header_terminator.length();
-
-		_headers = parseHeader(_raw_request.substr(0, body_start));
+		try {
+			_headers = parseHeader(_raw_request.substr(0, body_start));
+		} catch (...) {
+			handleCompleteRequest(500);
+			return;
+		}
 		_raw_request.erase(0, body_start);
 		// for (auto it = _headers.begin(); it != _headers.end(); it++) {
 		// 	std::cout << it->first << " = " << it->second << std::endl;
@@ -107,7 +113,7 @@ void Request::handleCompleteRequest(int status)
 	// this may be unnecessary since we do not support pipelining
 	//std::string whole_req = raw_request.substr(0, body_start + body_length);
 	//raw_request.erase(0, body_start + body_length);
-	std::cout << "handleCompleteRequest()" << _raw_request << std::endl;
+	// std::cout << "handleCompleteRequest()" << _raw_request << std::endl;
 	_state = READY;
 	getResponse(status);
 }
@@ -158,8 +164,6 @@ void Request::handleChunked() {
 	std::vector<std::string> chunks;
 	bool wasFinalChunk = false;
 	
-	// TODO: check that generated filename doesnt already
-	// exist; generate new names until we get a non existent one
 	if (!_receiving_chunked) {
 		_post_body_filename = generateTempFilename();
 	}
@@ -185,9 +189,6 @@ void Request::handleChunked() {
 
 	file.close();
 	if (wasFinalChunk) {
-		// std::cout << "handleChunked(): final chunk" << std::endl;
-		// TODO: do we need to reset receiving_chunked or will the Request
-		// always be destroyed after this?
 		_receiving_chunked = false;
 		_state = READY;
 	}
@@ -656,17 +657,14 @@ void	Request::respondPost() {
 			"multipart/form-data") != std::string::npos)
 		{
 			separateMultipart();
+			handleError(201);
 		} else {
-			// TODO: not sure what is suposed to happen when its not a 
-			// multipart AND not a CGI
+			handleError(415);
 		}
 	}
-	// TODO:create the actual response
-	handleError(201);
 }
 
 void Request::getResponse(int status_code) {
-	// std::cout << "GETRESPONSE" << std::endl;
 
 	if (status_code != 200) {
 		handleError(status_code);
@@ -681,12 +679,10 @@ void Request::getResponse(int status_code) {
 	}
 	else if (endsWith(_path, ".py"))
 		handleCgi();
-	else if (endsWith(_path, ".bla"))
-		handleCgi();
 	else if (_method == "GET")
 		handleGet();
 	else if (_method == "POST")
-		respondPost(); // sorry handlePost() function name already exists
+		respondPost();
 	else if (_method == "DELETE")
 		handleDelete();
 	_response.full_response = _response.header + _response.body;

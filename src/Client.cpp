@@ -62,10 +62,8 @@ void Client::closeConnection(int epoll_fd, int client_fd) {
 void	Client::updateLastEvent()
 {
 	_last_event = std::time(nullptr);
-	// std::cout << "Client[" << fd << "] latest event: " << std::asctime(std::localtime(&_last_event)) << std::endl;
 }
 
-// TODO: incomplete header -> timeout
 void Client::recvFrom() {
 	// std::cout << "entered recvFrom" << std::endl;
 	if (state == IDLE)
@@ -74,12 +72,9 @@ void Client::recvFrom() {
 	}
 	char buf[2000] = {0};
 
-	// TODO:: -1 really needed?
 	int bytes_read = recv(fd, buf, sizeof(buf) -1, MSG_DONTWAIT);
 
 	if (bytes_read < 0) {
-		// TODO: currently not throwing here because maybe this is not a 
-		// fatal error
 		std::cerr << "recvFrom() returned -1" << std::endl;
 		return ;
 	}
@@ -87,13 +82,9 @@ void Client::recvFrom() {
 	// this is possibly correct, i.e. EPOLLHUP is not needed because there is
 	// an event anyway when the client closes the connection
 	if (bytes_read == 0) {
-		// std::cout << "recvFrom(): read 0 bytes" << std::endl;
 		state = DISCONNECT;
 		return ;
 	}
-
-	// std::cout << std::string(buf, bytes_read) << std::endl;
-	// std::cout << "###" << std::endl;
 
 	request.addToRequest(std::string(buf, bytes_read));
 	if (request.getState() == READY) {
@@ -113,11 +104,6 @@ void Client::recvFrom() {
 			changeEpollMode(EPOLLOUT);
 			return ;
 		}
-		// TODO: 408: timeout
-		// TODO: 411 => disconnect?
-		// TODO: 413 => disconnect?
-		// TODO: sometimes the connection is closed without sending anything
-		// back? So we cannot always toggle to EPOLLOUT?
 		 
 		send_queue.push_back(request.getRes());
 
@@ -135,7 +121,6 @@ void Client::recvFrom() {
 
 void Client::sendTo() {
 	if (_to_send.length() == 0 && state == WAIT_CGI) {
-		// std::cout << "DOING CGI" << std::endl;
 		t_cgi_state cgi_result = cgi.checkCgi(); // this has waitpid
 		if (cgi_result == CGI_READY) {
 			if (request.getMethod() == POST){
@@ -148,17 +133,16 @@ void Client::sendTo() {
 				std::remove(cgi.output_filename.c_str());
 				send_queue.push_back(tmp);
 			} catch (const std::ios_base::failure& e){
-				// TODO how to handle error from client?
+				request.getResponse(500);
+				send_queue.push_back(request.getRes());
 			}
 				state = SEND;
 			return ;
 		}
 		else if (cgi_result == CGI_TIMEOUT || cgi_result == CGI_FAILED)
 		{
-			std::cout << "Client::sendTo(): cgi timeout or fail" << std::endl;
-			try {
-				std::remove(cgi.output_filename.c_str());
-			} catch (...){}
+			std::cerr << "Client::sendTo(): cgi timeout or fail" << std::endl;
+			std::remove(cgi.output_filename.c_str());
 			try {
 				if (cgi_result == CGI_TIMEOUT)
 					request.getResponse(504);
@@ -188,10 +172,8 @@ void Client::sendTo() {
 			_to_send = send_queue.front().full_response;
 		}
 
-		// std::cout << "SENDING" << to_send <<std::endl;
 		int bytes_sent = send(fd, _to_send.c_str(), _to_send.length(), MSG_NOSIGNAL);
 		if (bytes_sent < 0) {
-		// TODO: currently not throwing here because maybe this is not a fatal error
 			std::cerr << "send() returned -1" << std::endl;
 		}
 
