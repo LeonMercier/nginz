@@ -99,7 +99,17 @@ void Client::recvFrom() {
 	if (request.getState() == READY) {
 		if (request.getIsCgi()) {
 			state = WAIT_CGI;
-			cgi.launchCgi(request);
+			try 
+			{
+				cgi.launchCgi(request);
+			}
+			catch (std::exception &e)
+			{
+				std::cerr << e.what() << std::endl;
+				state = SEND;
+				request.getResponse(500);
+				send_queue.push_back(request.getRes());
+			}
 			changeEpollMode(EPOLLOUT);
 			return ;
 		}

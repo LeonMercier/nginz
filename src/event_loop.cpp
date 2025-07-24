@@ -1,8 +1,7 @@
 #include "../inc/event_loop.hpp"
 #include "../inc/Structs.hpp"
 #include "../inc/Client.hpp"
-
-std::atomic<bool> signal_stop(false);
+#include "../inc/Signal.hpp"
 
 static void createServerSocket(
 	int epoll_fd,
@@ -38,7 +37,8 @@ static void createServerSocket(
 		&hints,
 		&gai_result) < 0)
 	{
-		throw std::runtime_error("getaddrinfo() failed");
+		close(socket_fd);
+		throw std::runtime_error("getaddrinfo() failed"); 
 	}
 	
 	// Bind the address to the socket
@@ -46,13 +46,16 @@ static void createServerSocket(
 	// we will only check the first struct
 	if (bind(socket_fd, gai_result->ai_addr, gai_result->ai_addrlen) < 0)
 	{
-		throw std::runtime_error("bind() failed");
+		close(socket_fd);
+		freeaddrinfo(gai_result); // ADDED THIS SO THROWING DOESN'T CAUSE LEAKS
+		throw std::runtime_error("bind() failed");  // THIS DID THIS: in use at exit: 64 bytes in 1 blocks
 	}
 	freeaddrinfo(gai_result);
 
 	// Socket is ready to listen to incoming connection requests
 	// 256 is the max number of connections
 	if (listen(socket_fd, 256) < 0) {
+		close(socket_fd);
 		throw std::runtime_error("listen() failed");
 	}
 
@@ -61,6 +64,7 @@ static void createServerSocket(
 	e_event.data.fd = socket_fd;  // The socket itself
 	e_event.events = EPOLLIN;	  // Notify me when incoming data is available
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket_fd, &e_event) < 0) {
+		close(socket_fd);
 		throw std::runtime_error("createServerSocket(): epoll_ctl() failed"); 
 	}
 	for (auto it = configs.begin(); it != configs.end(); it++) {
@@ -148,11 +152,22 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 		sortConfigs(server_configs);
 
 	int epoll_fd = epoll_create(1);
-	if (epoll_fd < 0) { throw std::runtime_error("epoll_create() failed"); };
+	if (epoll_fd < 0) { throw std::runtime_error("epoll_create() failed"); };  // first fd we create, so we can just throw
 
 	std::map<int, std::vector<ServerConfig>> servers;
 	for (auto it = per_socket_configs.begin(); it != per_socket_configs.end(); it++) {
-		createServerSocket(epoll_fd, servers, it->second);
+		try
+		{
+			createServerSocket(epoll_fd, servers, it->second);
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << e.what() << '\n';
+			std::map<int, Client> dummy_clients;
+			close_fds(dummy_clients, servers);
+			close(epoll_fd);
+			throw std::runtime_error("Terminating webserv before launch\n");
+		}
 	}
 
 	// apparenty this does NOT need to be zeroed (for ex. manpage example)
@@ -200,7 +215,7 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 				if (retval.second == false) {
 					throw std::runtime_error("failed to add new client; \
 							  client already exists?");
-				}
+				} // DO WE WANT TO STOP RUNNING?
 
 				// epoll_ctl() takes information from e_event and puts it into
 				// the data structures held in the kernel, that is why we can
@@ -232,8 +247,6 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 					clients.erase(curr_event_fd);
 					continue;
 				}
-
-				// map::at() will throw std::out_of_range if not found
 				if (events[i].events & EPOLLIN) {
 					curr_client.recvFrom();
 				}
@@ -244,7 +257,6 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 					else{
 						std::cout << "\nSENDING TIMEOUT HEADER TO CLIENT:" 
 							<< curr_client.getClientFd() << std::endl;
-						// maybe front instead of back
 						curr_client.request.getResponse(408);
 						curr_client.send_queue.push_back(curr_client.request.getRes());
 						std::cout << "After creating send_que vector\n";
@@ -256,12 +268,9 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 						curr_client.setState(DISCONNECT);
 					}
 				}
-
 			}
 		}
 	}
-	// close(e_event.data.fd);
-	// close(socket_fd);
 	close(epoll_fd);
 	return 0;
 }

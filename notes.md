@@ -29,3 +29,23 @@ If we want to add cookies, config file needs session defined (on). For now, not 
 26/6/2025
 -----------
 * More than one cgi extension type is bonus! we can handle ONLY python for example
+
+-----------
+23/7/2025
+-----------
+* in eventloop:
+	```
+	if (retval.second == false) {
+			throw std::runtime_error("failed to add new client; \
+				client already exists?");
+		}
+	```
+
+	Do we want to stop running if we fail to add a new client? Now we are.
+
+* in utils.cpp
+
+	- who is calling fileToString? If it throws, who catches? (Atleast called from sendTo(), anywhere else?)
+	- In Client.cpp's there's a lot of "TO DO's", are they resolved yet?
+
+

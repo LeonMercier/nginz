@@ -1,5 +1,5 @@
 #pragma once
-#include "../inc/StandardLibraries.hpp"
+#include "StandardLibraries.hpp"
 
 std::string getHttpDate();
 bool		endsWith(const std::string& str, const std::string& suffix);
