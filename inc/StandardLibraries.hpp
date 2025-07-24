@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <asm-generic/socket.h>
 #include <atomic>
+#include <array>
 #include <cstddef> // for size_t?
 #include <cstdio> // remove
 #include <csignal>

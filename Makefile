@@ -25,14 +25,18 @@ SOURCES = src/main.cpp \
 			src/Client.cpp \
 			src/ConfigParser.cpp \
 			src/event_loop.cpp \
+			src/Multipart.cpp \
 			src/parse_header.cpp \
 			src/Request.cpp \
 			src/Signal.cpp \
 			src/utils.cpp
 			
 TOTAL := $(words $(SOURCES))
-HEADERS = inc/Client.hpp inc/event_loop.hpp \
-		  inc/Request.hpp inc/CgiHandler.hpp \
+HEADERS = inc/Client.hpp \
+		  inc/event_loop.hpp \
+		  inc/Multipart.hpp \
+		  inc/Request.hpp \
+		  inc/CgiHandler.hpp \
 		  inc/utils.hpp
 
 SRCDIR = src

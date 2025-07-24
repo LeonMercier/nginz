@@ -1,5 +1,6 @@
 #include "../inc/Request.hpp"
 #include "../inc/utils.hpp"
+#include <exception>
 
 const static std::string header_terminator = "\r\n\r\n";
 
@@ -29,6 +30,7 @@ void	Request::addToRequest(std::string part) {
 
 	if (_state == RECV_HEADER) {
 		if (!headerIsComplete()) {
+			std::cout << "TRY TO RECEIVE MORE HEADER" << std::endl;
 			// TODO: prevent client from sending an infinitely long header
 			return ;
 		}
@@ -105,7 +107,7 @@ void Request::handleCompleteRequest(int status)
 	// this may be unnecessary since we do not support pipelining
 	//std::string whole_req = raw_request.substr(0, body_start + body_length);
 	//raw_request.erase(0, body_start + body_length);
-
+	std::cout << "handleCompleteRequest()" << _raw_request << std::endl;
 	_state = READY;
 	getResponse(status);
 }
@@ -192,6 +194,7 @@ void Request::handleChunked() {
 }
 
 void	Request::initialPost() {
+	std::cout << "InitialPost()" << std::endl;
 	_state = RECV_MORE_BODY;
 	//method is not allowed in config
 	initResponseStruct(200);
@@ -264,11 +267,13 @@ void Request::handlePost() {
 	}
 	std::ofstream file(_post_body_filename, std::ios::app | std::ios::binary);
 	_body_bytes_read += _raw_request.length();
+	// TODO: do not write bytes beyond what content-length indicates
 	file << _raw_request;
 	_raw_request = "";
 	if (_body_bytes_read >= _content_length) {
 		std::cout << "handlePost(): complete POST" << std::endl;
 		// std::cout << _raw_request << std::endl;
+		file.close();
 		handleCompleteRequest(200);
 	}
 }
@@ -622,22 +627,17 @@ void Request::handleCgi() {
 }
 
 void	Request::separateMultipart() {
-	// Now we have to read _post_body_filename and separate the individual 
-	// files from it. 
-	// We can use the PostFile class and _post_file_uploads vector for it 
-	// (they are empty at this point)
-	// or we can do something else
-	std::string content_type_line = _headers.at("content-type");
-	std::string content_type = content_type_line.substr(
-		0, content_type_line.find(";"));
-	std::string boundary = content_type_line.substr(content_type.length() + 2);
-	boundary = boundary.substr(boundary.find("=") + 1);
-	std::cout << "CONT-TYPE: " << content_type << std::endl;
-	std::cout << "BOUNDARY: " << boundary << std::endl;
+	// Multipart::init() can throw exceptions related to file handling
+	try {
+		_multipart.init(_headers, _post_body_filename, _location.root);
+	} catch (std::exception &e) {
+		std::cerr << "Multipart error: " << e.what() << std::endl;
+		handleError(500);
+	}
 }
 
 void	Request::respondPost() {
-	// std::cout << "Request::respondPost()" << std::endl;
+	std::cout << "Request::respondPost()" << std::endl;
 	// the POST body is in the file _post_body_filename
 	auto content_type_iter = _headers.find("content-type");
 	if (content_type_iter != _headers.end()) {
