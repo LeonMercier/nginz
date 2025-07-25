@@ -60,18 +60,22 @@ void Multipart::readFiles() {
 		*/
 
 		// Read file contents
+		// time_t start = std::time(nullptr);
 		char ch;
 		std::string body;
 		while (infile.get(ch)) {
 			body += ch;
-			if (body.find("--" + _boundary) != std::string::npos) {
-				body.erase(body.find("--" + _boundary));
-				break ;
+			if (body.length() >= _boundary.length()) {
+				if (body.substr(body.length() - _boundary.length()) == _boundary) {
+					break ;
+				}
 			}
 			if (infile.eof()) {
 				break;
 			}
 		}
+		// time_t end = std::time(nullptr);
+		// std::cout << "time taken: " << end - start << std::endl;
 
 		// Write file contents to a new tmp file
 		std::string outfile_name = generateTempFilename();

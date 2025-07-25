@@ -19,12 +19,6 @@ static void createServerSocket(
 		throw std::runtime_error("setsockopt() failed"); 
 	}
 
-	// close the socket when an execve() happens
-	// TODO: fcntl() forbidden for Linux by the subject?
-	// if (fcntl(socket_fd, F_SETFL, FD_CLOEXEC) < 0) {
-	// 	throw std::runtime_error("fcntl() failed"); 
-	// }
-
 	// Set the address for the socket
 	struct addrinfo hints {};
 	memset(&hints, 0, sizeof(hints)); // is this needed?
@@ -47,8 +41,8 @@ static void createServerSocket(
 	if (bind(socket_fd, gai_result->ai_addr, gai_result->ai_addrlen) < 0)
 	{
 		close(socket_fd);
-		freeaddrinfo(gai_result); // ADDED THIS SO THROWING DOESN'T CAUSE LEAKS
-		throw std::runtime_error("bind() failed");  // THIS DID THIS: in use at exit: 64 bytes in 1 blocks
+		freeaddrinfo(gai_result);
+		throw std::runtime_error("bind() failed");
 	}
 	freeaddrinfo(gai_result);
 
@@ -90,18 +84,13 @@ static void	checkClientTimeout(std::map<int, Client> &clients)
 {
 	for (std::map<int, Client>::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
-		// std::cout << "\nClient[" << it->second.getClientFd() << "]\n";
 		time_t	latest_event = it->second.getLastEvent();
 		time_t	current_time = std::time(nullptr);
 		
 		if (current_time - latest_event >= _CLIENT_TIMEOUT_S)
 		{
-			// std::cout << "\n\n\n\ntrying to setState of the Client[" << it->second.getClientFd() << "], whose latest events is at: \n"
-			// << std::asctime(std::localtime(&latest_event)) << "now its: " << std::asctime(std::localtime(&current_time)) << std::endl;
-
 			// 408: RFC: "The client did not produce a request within the time 
 			// that the server was prepared to wait."
-			// TODO: timeout if send is takng too long?
 			t_client_state client_state = it->second.getState();
 			if (client_state == DISCONNECT)
 			{
@@ -152,7 +141,8 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 		sortConfigs(server_configs);
 
 	int epoll_fd = epoll_create(1);
-	if (epoll_fd < 0) { throw std::runtime_error("epoll_create() failed"); };  // first fd we create, so we can just throw
+	// first fd we create, so we can just throw
+	if (epoll_fd < 0) { throw std::runtime_error("epoll_create() failed"); };
 
 	std::map<int, std::vector<ServerConfig>> servers;
 	for (auto it = per_socket_configs.begin(); it != per_socket_configs.end(); it++) {
@@ -181,11 +171,7 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 	while (true)
 	{
 		checkClientTimeout(clients);
-		// time_t time = std::time(nullptr);
-		// std::cout << "Time before epoll_wait: " << std::asctime(std::localtime(&time)) << std::endl;
 		int ready = epoll_wait(epoll_fd, events, 64, 1000);
-		// time = std::time(nullptr);
-		// std::cout << "Time after epoll_wait: " << std::asctime(std::localtime(&time)) << std::endl;
 		if (signal_stop)
 		{
 			close_fds(clients, servers);
@@ -200,22 +186,21 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 
 			// fd of current event is an index of servers => new connection
 			if (servers.find(curr_event_fd) != servers.end() && !signal_stop)
-			// if (curr_event_fd == socket_fd) // new connection
 			{
 				struct sockaddr_in client;
 				socklen_t size = sizeof(client);
 				int client_fd = accept(curr_event_fd,
 						   reinterpret_cast<sockaddr *>(&client), &size);
 				if (client_fd < 0) {
-					throw std::runtime_error("accept() failed");
+					std::cerr << "accept() failed" << std::endl;
+					continue ;
 				};
 
 				auto retval = clients.insert({client_fd,
 					Client(servers[curr_event_fd], epoll_fd, client_fd)});
 				if (retval.second == false) {
-					throw std::runtime_error("failed to add new client; \
-							  client already exists?");
-				} // DO WE WANT TO STOP RUNNING?
+					std::cerr <<"failed to add new client; client already exists?" << std::endl;
+				}
 
 				// epoll_ctl() takes information from e_event and puts it into
 				// the data structures held in the kernel, that is why we can
@@ -230,7 +215,7 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 				e_event.events = EPOLLIN;
 				e_event.data.fd = client_fd;
 				if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &e_event) < 0) {
-					throw std::runtime_error("eventLoop(): epoll_ctl() failed");
+					std::cerr << "eventLoop(): epoll_ctl() failed" << std::endl;
 				}
 				clients.at(client_fd).updateLastEvent();
 			}
@@ -239,8 +224,6 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 				Client &curr_client = clients.at(curr_event_fd);
 				curr_client.updateLastEvent();
 
-				// std::cout << "receiving: socket: " << socket_fd;
-				//std::cout << " client fd: " << curr_event_fd << std::endl;
 				if (curr_client.getState() == DISCONNECT) {
 					std::cout << "DISCONNECTING CLIENT\n";
 					curr_client.closeConnection(epoll_fd, curr_client.getClientFd());
@@ -259,7 +242,6 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 							<< curr_client.getClientFd() << std::endl;
 						curr_client.request.getResponse(408);
 						curr_client.send_queue.push_back(curr_client.request.getRes());
-						std::cout << "After creating send_que vector\n";
 						for (auto it = curr_client.send_queue.begin(); it != curr_client.send_queue.end(); it++)
 						{
 							std::cout << it->header << std::endl;

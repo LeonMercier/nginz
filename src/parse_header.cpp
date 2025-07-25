@@ -12,7 +12,7 @@ void	hexadecimalToAscii(std::string &hex)
 	}
 	catch (std::exception &e)
 	{
-		std::cout << "In request parsing: hexadecimalToAscii for " << hex << ": " << e.what() << std::endl;
+		std::cerr << "In request parsing: hexadecimalToAscii for " << hex << ": " << e.what() << std::endl;
 	}
 	// std::cout << "\nHex after hex to ascii: " << hex << std::endl;
 }
