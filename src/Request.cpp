@@ -1,6 +1,5 @@
 #include "../inc/Request.hpp"
 #include "../inc/utils.hpp"
-#include <exception>
 
 const static std::string header_terminator = "\r\n\r\n";
 
@@ -9,10 +8,6 @@ Request::Request(std::vector<ServerConfig> configs) : _all_configs(configs) {
 }
 
 void	Request::addToRequest(std::string part) {
-
-	// std::cout << "addToRequest()" << std::endl;
-	// std::cout << part << std::endl;
-
 	try {
 		_raw_request += std::string(part);
 	} catch (...) {
@@ -21,7 +16,12 @@ void	Request::addToRequest(std::string part) {
 	}
 
 	if (_receiving_chunked) {
-		handleChunked();
+		try {
+			handleChunked();
+		} catch (std::exception &e) {
+			handleCompleteRequest(500);
+			return ;
+		}
 		if (_state == READY) {
 			handleCompleteRequest(200);
 		}
@@ -30,7 +30,6 @@ void	Request::addToRequest(std::string part) {
 
 	if (_state == RECV_HEADER) {
 		if (!headerIsComplete()) {
-			std::cout << "TRY TO RECEIVE MORE HEADER" << std::endl;
 			if (_raw_request.length() > 8192) {
 				handleCompleteRequest(413);
 			}
@@ -46,9 +45,6 @@ void	Request::addToRequest(std::string part) {
 			return;
 		}
 		_raw_request.erase(0, body_start);
-		// for (auto it = _headers.begin(); it != _headers.end(); it++) {
-		// 	std::cout << it->first << " = " << it->second << std::endl;
-		// }
 
 		setConfig();
 
@@ -95,8 +91,7 @@ void	Request::setConfig() {
 	}
 
 	for (auto it = _all_configs.begin(); it != _all_configs.end(); it++) {
-		// select first config where header host field matches 
-		// servername
+		// select first config where header host field matches servername
 		for (auto itt = it->server_names.begin();
 			itt != it->server_names.end(); itt++) {
 			if (_headers.at("host") == *itt) {
@@ -109,10 +104,6 @@ void	Request::setConfig() {
 
 void Request::handleCompleteRequest(int status)
 {
-	// this may be unnecessary since we do not support pipelining
-	//std::string whole_req = raw_request.substr(0, body_start + body_length);
-	//raw_request.erase(0, body_start + body_length);
-	// std::cout << "handleCompleteRequest()" << _raw_request << std::endl;
 	_state = READY;
 	getResponse(status);
 }
@@ -131,12 +122,11 @@ static bool extractChunks(std::string &raw_request,
 				std::string tmp = raw_request.substr(0, raw_request.find("\r\n"));
 				left_to_read = std::stoi(tmp, nullptr, 16);
 				raw_request.erase(0, tmp.length() + 2);
-				// std::cout << "left_to_read: " << left_to_read << std::endl;
-			} catch (...) {
+			} catch (std::exception &e) {
 				std::cerr << "Request::extractChunks(): failed to parse chunk"
 					"size" << std::endl;
-				// TODO: propagate error to return error page
-				return true;
+				// rethrowing the same exception
+				throw;
 			}
 			// end of transmission is signaled by a chunk of size zero
 			if (left_to_read == 0) {
@@ -158,8 +148,6 @@ static bool extractChunks(std::string &raw_request,
 }
 
 void Request::handleChunked() {
-	 // std::cout << "handleChunked(): " << std::endl;
-
 	std::vector<std::string> chunks;
 	bool wasFinalChunk = false;
 	
@@ -172,14 +160,10 @@ void Request::handleChunked() {
 
 	// this is the initial call to this function
 	if (!_receiving_chunked) {
-		// std::cout << "handleChunked(): initial call" << _raw_request << std::endl;
 		_receiving_chunked = true;
 		if (_raw_request.empty()) {
-			// first recv() only contained a header
 			return ;
 		}
-	} else {
-		// std::cout << "handleChunked(): further call" << std::endl;
 	}
 	wasFinalChunk = extractChunks(_raw_request, chunks);
 	for (auto it = chunks.begin(); it != chunks.end(); it++) {
@@ -194,7 +178,6 @@ void Request::handleChunked() {
 }
 
 void	Request::initialPost() {
-	std::cout << "InitialPost()" << std::endl;
 	_state = RECV_MORE_BODY;
 	//method is not allowed in config
 	initResponseStruct(200);
@@ -206,8 +189,12 @@ void	Request::initialPost() {
 	// if there is transfer-encoding, then content-length can be ignored
 	if (_headers.find("transfer-encoding") != _headers.end()) {
 		if (_headers.at("transfer-encoding") == "chunked") {
-			// std::cout << "receiving chunked transfer" << std::endl;
-			handleChunked();
+			try {
+				handleChunked();
+			} catch (std::exception &e) {
+				handleCompleteRequest(500);
+				return ;
+			}
 			return ;
 		}
 		// header has transfer-encoding but it is not set to chunked =>
@@ -228,7 +215,6 @@ void	Request::initialPost() {
 	long temp = 0;
 	try {
 		temp = std::stol(_headers.at("content-length"));
-		std::cout << "|  " << "TEMP_LENGTH = " << temp << std::endl;
 	} catch (...) {
 		std::cerr << "Client::handlePost(): failed to parse Content-Length";
 		std::cerr << std::endl;
@@ -268,7 +254,6 @@ void Request::handlePost() {
 	_body_bytes_read += _raw_request.length();
 	_raw_request = "";
 	if (_body_bytes_read >= _content_length) {
-		std::cout << "handlePost(): complete POST" << std::endl;
 		file.close();
 		handleCompleteRequest(200);
 	} else {
@@ -556,7 +541,6 @@ void Request::validateRequest() {
 	}
 	//check for extension type not supported
 	else if (!fileExtensionIsSupported(_path)) {
-		std::cout << "|  " << "Error for ext not supported" << std::endl;
 		handleError(415);
 	}
 }
@@ -604,14 +588,12 @@ void	Request::separateMultipart() {
 }
 
 void	Request::respondPost() {
-	std::cout << "Request::respondPost()" << std::endl;
 	// the POST body is in the file _post_body_filename
 	auto content_type_iter = _headers.find("content-type");
 	if (content_type_iter != _headers.end()) {
 		if (content_type_iter->second.find(
 			"multipart/form-data") != std::string::npos)
 		{
-			std::cout << "IF STATEMENT" << std::endl;
 			separateMultipart();
 			handleError(201);
 		} else {
@@ -645,5 +627,5 @@ void Request::getResponse(int status_code) {
 	else if (_method == "DELETE")
 		handleDelete();
 	_response.full_response = _response.header + _response.body;
-	printRequest(); // Remove
+	// printRequest(); // Remove
 }

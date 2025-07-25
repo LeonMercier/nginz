@@ -21,9 +21,11 @@ int	main(int argc, char **argv)
 		eventLoop(server_configs);
 	} catch (std::exception &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
-		std::cout << "Type:    " << typeid(e).name() << "\n";
+		std::cerr << "Type:    " << typeid(e).name() << "\n";
+		return (1);
 	} catch (...) {
 		std::cerr << "Unknown error" << std::endl;
+		return (1);
 	}
     return (0);
 }

@@ -89,8 +89,6 @@ typedef enum {
 	ERR_METHOD
 } t_method;
 
-//class Request;
-//Response getResponse(std::string request, ServerConfig config, int status_code, Request *req_ref);
 class Request {
 public:
 	Request(std::vector<ServerConfig> configs);

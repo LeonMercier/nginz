@@ -1,6 +1,4 @@
 #include "../inc/CgiHandler.hpp"
-#include "../inc/Signal.hpp"
-#include <stdexcept>
 
 t_cgi_state	CgiHandler::checkCgi()
 {
@@ -22,16 +20,6 @@ t_cgi_state	CgiHandler::checkCgi()
 			}
 		}
 		std::cout << "CGI script exited succesfully" << std::endl;
-		
-		// std::cout << "\n\nCGI_READY, OUTPUT:\n" << std::endl;
-		//
-		// std::fstream fafa(output_filename);
-		// std::string str;
-		// while (getline(fafa, str))
-		// {
-		// 	std::cout << str << std::endl;
-		// }
-
 		return CGI_READY;
 	}
 	return (CGI_WAITING);
