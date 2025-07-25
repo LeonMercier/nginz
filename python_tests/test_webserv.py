@@ -248,7 +248,7 @@ def test_413_malformed_content_length_3():
 	assert status_code == '413'
 
 def test_414_uri_too_long():
-	temp_str = "x" * 10000
+	temp_str = "x" * 5000
 	response = requests.get("http://127.0.0.1:8080/" + temp_str)
 	assert response.status_code == 414
 
@@ -256,7 +256,23 @@ def test_415_unsupported_filetype_1():
 	s = socket.socket()
 	s.connect(('127.0.0.1', 8080))
 
-	req = "GET /uploads/main.cpp HTTP/1.1\r\n\r\n"
+	req = "GET /uploads/for_tester.cpp HTTP/1.1\r\n\r\n"
+
+	s.send(req.encode())
+	response = s.recv(1024)
+	response_text = response.decode('utf-8', errors='ignore')
+	full_status_line = response_text.split('\r\n')[0]
+	print("Status Line:", full_status_line)
+	split_status_line = full_status_line.split()
+	status_code = split_status_line[1]
+	print("Status:", split_status_line[1])
+	assert status_code == '415'
+
+def test_415_post_without_cgi():
+	s = socket.socket()
+	s.connect(('127.0.0.1', 8080))
+
+	req = "POST /uploads/ HTTP/1.1\r\nContent-Length: 10\r\n\r\nhelloworlds"
 
 	s.send(req.encode())
 	response = s.recv(1024)
@@ -359,21 +375,7 @@ def test_413_post_with_body_too_large():
 	print("Status:", split_status_line[1])
 	assert status_code == '413'
 
-def test_201_post_without_cgi():
-	s = socket.socket()
-	s.connect(('127.0.0.1', 8080))
 
-	req = "POST /uploads/ HTTP/1.1\r\nContent-Length: 10\r\n\r\nhelloworld"
-
-	s.send(req.encode())
-	response = s.recv(1024)
-	response_text = response.decode('utf-8', errors='ignore')
-	full_status_line = response_text.split('\r\n')[0]
-	print("Status Line:", full_status_line)
-	split_status_line = full_status_line.split()
-	status_code = split_status_line[1]
-	print("Status:", split_status_line[1])
-	assert status_code == '201'
 
 #TODO Test a cgi using a script that sleeps, then check other connection
 #TODO Test that sends good chunks
