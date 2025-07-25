@@ -52,11 +52,10 @@ void	Request::addToRequest(std::string part) {
 
 		setConfig();
 
-		// TODO: .at() will throw if key is not found => catch => invalid request
 		auto method = _headers.find("method");
 
 		// no method field
-		if (method->second == "") {
+		if (method == _headers.end() || method->second == "") {
 			std::cerr << "Request::addToRequest(): no method field" << std::endl;
 			handleCompleteRequest(400);
 			return ;
@@ -267,15 +266,19 @@ void Request::handlePost() {
 		return ;
 	}
 	std::ofstream file(_post_body_filename, std::ios::app | std::ios::binary);
+	if (_raw_request.length() + _body_bytes_read <= _content_length) {
+		file << _raw_request;
+	} else {
+		file << _raw_request.substr(0, _content_length - _body_bytes_read);
+	}
 	_body_bytes_read += _raw_request.length();
-	// TODO: do not write bytes beyond what content-length indicates
-	file << _raw_request;
 	_raw_request = "";
 	if (_body_bytes_read >= _content_length) {
 		std::cout << "handlePost(): complete POST" << std::endl;
-		// std::cout << _raw_request << std::endl;
 		file.close();
 		handleCompleteRequest(200);
+	} else {
+		file.close();
 	}
 }
 
