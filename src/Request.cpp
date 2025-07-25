@@ -52,11 +52,10 @@ void	Request::addToRequest(std::string part) {
 
 		setConfig();
 
-		// TODO: .at() will throw if key is not found => catch => invalid request
 		auto method = _headers.find("method");
 
 		// no method field
-		if (method->second == "") {
+		if (method == _headers.end() || method->second == "") {
 			std::cerr << "Request::addToRequest(): no method field" << std::endl;
 			handleCompleteRequest(400);
 			return ;
