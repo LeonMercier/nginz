@@ -236,19 +236,13 @@ void	Request::initialPost() {
 		return ;
 	}
 	if (temp < 0) {
-		std::cout << "|  " << "WTFOMG!!!!!!" << std::endl;
 		handleCompleteRequest(400);
 		return ;
 	}
 	else {
 		_content_length = (size_t)temp;
 	}
-	std::cout << "|  " << "CONTENT_LENGTH = " << temp << std::endl;
-	if (_content_length == 0)
-	{
-		std::cout << "CONTENT-LENGTH = 0\n";
-	}
-	// client wants to send too big of a body
+	// check if client wants to send too big of a body
 	if (_config.client_max_body_size != 0
 		&& _content_length > _config.client_max_body_size) {
 		std::cerr << "Client body length larger than allowed" << std::endl;
@@ -282,12 +276,9 @@ void Request::handlePost() {
 	}
 }
 
-// TODO: this may also trigger on the end of a chunked transfer which is no
-// good
 bool Request::headerIsComplete() {
-	if (_raw_request.find("\r\n\r\n") != std::string::npos) {
+	if (_raw_request.find("\r\n\r\n") != std::string::npos)
 		return true;
-	}
 	return false;
 }
 
@@ -330,32 +321,17 @@ std::string		Request::getPostBodyFilename(){
 
 t_method			Request::getMethod(){
 	if (_method == "GET")
-	{
 		return GET;
-	}
 	if (_method == "POST")
-	{
 		return POST;
-	}
 	if (_method == "DELETE")
-	{
 		return DELETE;
-	}
 	return ERR_METHOD;
 }
 
 e_req_state	Request::getState() {
 	return _state;
 }
-
-// bool Request::isPostAllowed(std::string path, ServerConfig config) {
-// 	LocationConfig location = getLocation(path, config);
-// 	if (std::find(location.methods.begin(), location.methods.end(), "POST")
-// 		!= location.methods.end()) {
-// 		return true;
-// 	}
-// 	return false;
-// }
 
 void Request::setStatusCode(int status_code) {
 	_status_code = status_code;
@@ -368,7 +344,7 @@ void Request::setStatusCode(int status_code) {
 
 void Request::getAutoIndex() {
 	try {
-		_response.body = generateAutoIndex(_path, _config);
+		_response.body = generateAutoIndex(_path, _location.root);
 	} catch (...) {
 		handleError(404);
 	}
@@ -393,15 +369,13 @@ void Request::createBodyForError(std::string filename) {
 void Request::handleError(int status_code) {
 	setStatusCode(status_code);
 	for (auto& p : _config.error_pages) {
-		if (_status_code == p.first) {
+		if (_status_code == p.first)
 			createBodyForError(p.second);
-		}
 	}
 	if (_response.body == "") {
 		for (auto& p : errorHttps) {
-			if (_status_code == p.first) {
+			if (_status_code == p.first)
 				_response.body = p.second;
-			}
 		}
 	}
 	createHeader("text/html; charset=UTF-8");
@@ -415,58 +389,47 @@ void Request::createHeader(std::string content_type) {
 	"Content-Length: " + std::to_string(_response.body.length()) + "\r\n"
 	"Cache-Control: no-cache, private\r\n";
 
-	if (_status_code == 201) {
+	if (_status_code == 201)
 		_response.header += "Location: " + _location.root + _path + "\r\n";
-	} 
-	else if (_status_code == 301) {
+	else if (_status_code == 301)
 		_response.header += "Location: " + _response.redirect_path + "\r\n";
-	}
 	else if (_status_code == 408) {
-		// std::cout << "CREATING RESPONSE HEADER FOR 408\n\n";
 		_response.header += "Connection: close\r\n";
 		_connection_type_is_close = true;
 	}
-	else {
+	else
 		_response.header += "Connection: keep-alive\r\n";
-	}
 
 	_response.header += "\r\n";
-	// std::cout << "response_header:\n" << _response.header << std::endl;
 }
 
 void Request::createBody(std::string filename) {
 	try {
 		_response.body = fileToString(filename);
-	} catch (const std::ios_base::failure& e){
+	} catch (...){
 		handleError(404);
 	}
 }
 
 void Request::handleDelete()
 {
-	std::string	full_path;
-
-	full_path = _location.root + _path;
-	// std::cout << "path: " << full_path << std::endl;
+	std::string	full_path = _location.root + _path;
 	try {
-		if (!std::ifstream(full_path)) {
+		if (!std::ifstream(full_path))
 			throw std::runtime_error("Couldn't delete unexisting file: " + full_path);
-		}
 	} catch (std::exception &e) {
-		std::cout << e.what() << std::endl;
+		std::cerr << e.what() << std::endl;
 		handleError(404);
 		return ;
 	}
 	try {
 		std::filesystem::remove_all(full_path); // remove_all removes even directories with files
-		if (std::ifstream(full_path)) {
+		if (std::ifstream(full_path))
 			throw std::runtime_error("Couldn't delete the file " + full_path);
-		}
 	} catch (std::exception &e) {
-		std::cout << e.what() << std::endl;
+		std::cerr << e.what() << std::endl;
 		handleError(500);
 	}
-	std::cout << "Deleted the file: " + full_path << std::endl;
 }
 
 
@@ -474,31 +437,20 @@ void Request::handleGet() {
 	if (_path == "/" || (_location.autoindex == false && _is_directory == true)) {
 		if (_location.index != "") {
 			std::string temp = _location.root + "/" + _location.index;
-			std::cout << "|  " << "found a directory and not auto-index" << std::endl;
-			std::cout << "|  " << "COMBINED THING: " << temp << std::endl;
 			if (!std::filesystem::exists(temp)) {
-				std::cout << "|  " << "Does not exist" << std::endl;
 				handleError(404);
+				return ;
 			}
-			else {
-				std::cout << "|  " << "It exists so do it" << std::endl;
+			else
 				createBody(temp);
-			}
 		}
 		else
 			createBody(_location.root + "/index.html");
-		if (_status_code == 200)
-			createHeader("text/html; charset=UTF-8");
+		createHeader("text/html; charset=UTF-8");
 	}
-	else if (_location.autoindex == true && _is_directory == true) {
+	else if (_location.autoindex == true && _is_directory == true)
 		getAutoIndex();
-	}
 	else {
-		if (!std::filesystem::exists(_location.root + _path)) {
-			std::cout << "|  " << "Does not exist 2" << std::endl;
-			handleError(404);
-			return ;
-		}
 		createBody(_location.root + _path);
 		if (_status_code == 200) {
 			for (auto& p : extensions) {
@@ -515,7 +467,8 @@ void Request::checkLocation() {
 	std::vector<LocationConfig> locations_copy = _config.locations;
 	std::string temp_path = _path;
 
-	int n = locations_copy.size(); // sort locations to find the longest match
+	// sort locations by largest to smallest
+	int n = locations_copy.size(); 
 	for (int i = 0; i < n - 1; i++) {
 		for (int j = 0; j < n - i - 1; j++) {
 			if (locations_copy[j].path.length() < locations_copy[j + 1].path.length()) {
@@ -524,6 +477,7 @@ void Request::checkLocation() {
 		}
 	}
 	removeEndSlash(temp_path);
+	// find the location that most completely matches the path
 	for (auto location : locations_copy) {
 		removeEndSlash(location.path);
 		if (location.path.length() <= temp_path.length()
@@ -543,9 +497,7 @@ bool Request::methodIsNotAllowed() {
 }
 
 bool Request::fileExtensionIsSupported(std::string &path) {
-	//std::cout << "|  " << "path in file ext check = " << path << std::endl;
 	for (auto& p : extensions) {
-		//std::cout << "|  " << "p.first = " << p.first << std::endl;
 		if (endsWith(path, p.first)) {
 			return true;
 		}
@@ -559,9 +511,11 @@ void Request::validateRequest() {
 	if (_method == "" || _path == "" || _version == "") {
 		handleError(400);
 	}
+	// does the path contain the forbidden ".."
 	else if (_path.find("/../") != std::string::npos || endsWith(_path, "/..")) {
 		handleError(403);
 	}
+	// does the path size exceed the maximum uri size
 	else if (_path.size() > _MAX_URI_SIZE) {
 		handleError(414);
 	}
@@ -578,14 +532,13 @@ void Request::validateRequest() {
 	// is the method allowed in config
 	else if (methodIsNotAllowed())
 		handleError(405);
-	//is the location return code 301 for redirection
+	// does the config contain return code 301 for redirection
 	else if (_location.return_code == 301) {
 		_response.redirect_path = _location.return_url;
 		handleError(301);
 	}
 	// is the path a directory
 	else if (std::filesystem::is_directory(_location.root + _path)) {
-		std::cout << "|  " << "is directory check in validation" << std::endl;
 		_is_directory = true;
 		// check for redirect error
 		if (_path.back() != '/' && _method != "POST") {
@@ -594,10 +547,10 @@ void Request::validateRequest() {
 		}
 		//check for extension type not supported for the location index
 		else if (_location.index != "" && !fileExtensionIsSupported(_location.index)) {
-			std::cout << "|  " << "Error for ext not supported in directory for index" << std::endl;
 			handleError(415);
 		}
 	}
+	// does the file exist
 	else if (!std::filesystem::exists(_location.root + _path)) {
 		handleError(404);
 	}
@@ -606,7 +559,6 @@ void Request::validateRequest() {
 		std::cout << "|  " << "Error for ext not supported" << std::endl;
 		handleError(415);
 	}
-
 }
 
 void Request::initResponseStruct(int status_code) {
@@ -659,11 +611,15 @@ void	Request::respondPost() {
 		if (content_type_iter->second.find(
 			"multipart/form-data") != std::string::npos)
 		{
+			std::cout << "IF STATEMENT" << std::endl;
 			separateMultipart();
 			handleError(201);
 		} else {
 			handleError(415);
 		}
+	}
+	else {
+		handleError(415);
 	}
 }
 
