@@ -3,6 +3,7 @@
 #include "StandardLibraries.hpp"
 #include "Request.hpp"
 #include "utils.hpp"
+#include "Signal.hpp"
 
 typedef enum e_cgi_state {
 	CGI_INACTIVE,

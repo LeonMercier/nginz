@@ -52,14 +52,9 @@ void Multipart::readFiles() {
 			file_headers[key] = line;
 		}
 
-		/*
-		std::cout << "AAAfileheaders: " <<std::endl;
-		for (auto it : file_headers) {
-			std::cout << "key:" << it.first << "#value:" << it.second << std::endl;
-		}
-		*/
-
 		// Read file contents
+
+		// For benchmarking:
 		// time_t start = std::time(nullptr);
 		char ch;
 		std::string body;
@@ -99,7 +94,6 @@ static std::string getFilename(std::map<std::string, std::string> &hdr) {
 			std::string part;
 			while (std::getline(ss, part, delim)) {
 				part.erase(0, part.find_first_not_of(' '));
-				std::cout << "part: " << part << std::endl;
 				if (part.substr(0, 8) == "filename" ) {
 					part.erase(0, 10);
 					part.erase(part.find_last_not_of('"') + 1);
@@ -134,5 +128,3 @@ void	Multipart::moveFiles() {
 		}
 	}
 }
-
-

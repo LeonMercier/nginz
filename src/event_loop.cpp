@@ -1,7 +1,4 @@
 #include "../inc/event_loop.hpp"
-#include "../inc/Structs.hpp"
-#include "../inc/Client.hpp"
-#include "../inc/Signal.hpp"
 
 static void createServerSocket(
 	int epoll_fd,

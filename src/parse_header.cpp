@@ -121,9 +121,6 @@ std::map<std::string, std::string> parseHeader(std::string request) {
 			}
 		}
 	}
-	// for (auto& p : result) {
-	// 	std::cout << ">>>" << p.first << " -- " << p.second << std::endl;
-	// }
 
 	return result;
 }
