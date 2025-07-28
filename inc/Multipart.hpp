@@ -19,6 +19,7 @@ public:
 		std::string &root);
 	void	readFiles();
 	void	moveFiles();
+	int		actual_files = 0;
 
 private:
 	std::string				_tmp_infile;

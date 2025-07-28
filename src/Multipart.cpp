@@ -126,5 +126,6 @@ void	Multipart::moveFiles() {
 			std::filesystem::copy(it.tmp_filename, _path + filename);
 			std::filesystem::remove(it.tmp_filename);
 		}
+		actual_files++;
 	}
 }
