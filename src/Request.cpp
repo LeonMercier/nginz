@@ -531,12 +531,6 @@ void Request::validateRequest() {
 	if (_method == "" || _path == "" || _version == "") {
 		handleError(400);
 	}
-	// check for upload without file
-	else if (_method == "POST" && _headers.find("content-type") != _headers.end()
-				&& _headers.at("content-type").find("multipart/form-data") != std::string::npos
-				&& _multipart.actual_files == 0) {
-		handleError(400);
-	}
 	// does the path contain the forbidden ".."
 	else if (_path.find("/../") != std::string::npos || endsWith(_path, "/..")) {
 		handleError(403);
@@ -636,7 +630,14 @@ void	Request::respondPost() {
 			"multipart/form-data") != std::string::npos)
 		{
 			separateMultipart();
-			handleError(201);
+			if (_method == "POST" && _headers.find("content-type") != _headers.end()
+				&& _headers.at("content-type").find("multipart/form-data") != std::string::npos
+				&& _multipart.actual_files == 0) {
+					handleError(400);
+			}
+			else {
+				handleError(201);
+			}
 		} else {
 			handleError(415);
 		}
