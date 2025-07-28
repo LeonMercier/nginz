@@ -465,8 +465,10 @@ void Request::handleGet() {
 			else
 				createBody(temp);
 		}
+		else if (std::filesystem::exists(_location.root + "/" + _location.path + "/" + "/index.html"))
+			createBody(_location.root + "/" + _location.path + "/" + "/index.html");
 		else
-			createBody(_location.root + "/index.html");
+			handleError(404);
 		createHeader("text/html; charset=UTF-8");
 	}
 	else if (_location.autoindex == true && _is_directory == true)
@@ -669,5 +671,5 @@ void Request::getResponse(int status_code) {
 	else if (_method == "DELETE")
 		handleDelete();
 	_response.full_response = _response.header + _response.body;
-	// printRequest(); // Remove
+	// printRequest();
 }
