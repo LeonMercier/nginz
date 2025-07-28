@@ -214,10 +214,15 @@ int eventLoop(std::vector<ServerConfig> server_configs)
 				if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &e_event) < 0) {
 					std::cerr << "eventLoop(): epoll_ctl() failed" << std::endl;
 				}
-				clients.at(client_fd).updateLastEvent();
+				try {
+					clients.at(client_fd).updateLastEvent();
+				} catch (...) {}
 			}
 			else // existing connection
 			{
+				if (clients.find(curr_event_fd) == clients.end()) {
+					continue ;
+				}
 				Client &curr_client = clients.at(curr_event_fd);
 				curr_client.updateLastEvent();
 

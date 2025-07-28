@@ -29,7 +29,7 @@ void Client::changeEpollMode(uint32_t mode) {
 	e_event.data.fd = fd;
 	// note: epoll_ct_MOD, not epoll_ctl_ADD
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &e_event) < 0) {
-		throw std::runtime_error("changeEpollMode: epoll_ctl() failed");
+		std::cerr << "changeEpollMode: epoll_ctl() failed" << std::endl;
 	}
 }
 
@@ -49,11 +49,11 @@ void Client::closeConnection(int epoll_fd, int client_fd) {
 		{
 			std::cout << "SHITTY EPOLLFD\n";
 		}
-		throw std::runtime_error("closeConnection: epoll_ctl() failed");
+		std::cerr << "closeConnection: epoll_ctl() failed" << std::endl;
 	}
 
 	if (close(client_fd) < 0) {
-		throw std::runtime_error("failed to close() client_fd");
+		std::cerr << "failed to close() client_fd" << std::endl;
 	}
 	std::cout << "Clientfd " << client_fd << " has been closed\n" ;
 	state = DISCONNECT;
