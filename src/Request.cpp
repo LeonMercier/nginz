@@ -450,6 +450,7 @@ void Request::handleDelete()
 		std::cerr << e.what() << std::endl;
 		handleError(500);
 	}
+	handleError(204);
 }
 
 
