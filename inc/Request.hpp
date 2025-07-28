@@ -1,7 +1,8 @@
 #pragma once
 
 #include "parse_header.hpp"
-#include "Webserv.hpp"
+#include "Structs.hpp"
+#include "StandardLibraries.hpp"
 #include "Multipart.hpp"
 
 const static int _MAX_URI_SIZE = 4096;
@@ -115,6 +116,7 @@ public:
 	void								handlePost();
 
 	bool								headerIsComplete();
+	std::string 						generateAutoIndex(const std::string& request_path, std::string &root);
 	void								getResponse(int status_code);
 	//bool								isPostAllowed(std::string path, ServerConfig config);
 	void								validateRequest();

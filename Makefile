@@ -20,7 +20,6 @@ NAME = webserv
 CPPFLAGS = -std=c++17 -Wall -Werror -Wextra -g
 CPP = c++
 SOURCES = src/main.cpp \
-			src/autoindex.cpp \
 			src/CgiHandler.cpp \
 			src/Client.cpp \
 			src/ConfigParser.cpp \
@@ -59,10 +58,7 @@ $(OBJDIR):
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS) | $(OBJDIR)
 	@mkdir -p $(dir $@)
 	@$(CPP) $(CPPFLAGS) -c $< -o $@
-	@count=$$(cat $(COUNT_FILE) 2>/dev/null || echo 0); \
-	count=$$((count + 1)); \
-	echo $$count > $(COUNT_FILE); \
-	echo "📥 $(ORANGE)Compiled $$count/$(TOTAL) .o files!$(RESET)"
+	@echo "$(ORANGE)Compiling...$(RESET)"
 
 
 clean:

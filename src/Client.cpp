@@ -1,6 +1,6 @@
 
-#include "../inc/Client.hpp"
 #include "../inc/utils.hpp"
+#include "../inc/Client.hpp"
 
 Client::Client(std::vector<ServerConfig> configs, int epoll_fd, int fd) :
 	request(configs),
