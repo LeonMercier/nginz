@@ -108,6 +108,14 @@ void	CgiHandler::launchCgi(Request &request)
 	getCgiEnv(request, request.getConfig(), envp, envVars);
 
 	std::string	executable = request.getLocation().cgi_path_py;
+	if (!std::filesystem::exists(executable)) {
+		_state = CGI_FAILED;
+		throw std::runtime_error("Failed to find CGI executable");
+	}
+	if (access(executable.c_str(), X_OK) != 0) {
+		_state = CGI_FAILED;
+        throw std::runtime_error("File does not have execute permission");
+    }
 	std::string	script = request.getLocation().root + request.getPath();
 
 	char *argv[] = {
