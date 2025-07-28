@@ -1,12 +1,5 @@
 
-// IN PARSING:
-// open the config_file -> trim comments and unnecessary spaces -> necessary config_file information is put into a string vector 
-// FROM THAT STRING VECTOR:
-	// search for server block(s)
-	// inside the server block search matching "values" for keywords
-
-#include "../inc/Structs.hpp"
-#include "../inc/StandardLibraries.hpp"
+#include "../inc/ConfigParser.hpp"
 
 // void printServerConfigs(const std::vector<ServerConfig> &servers)
 // {
@@ -88,8 +81,6 @@ std::string	trimBeginningAndEnd(const std::string &line)
 	end = line.find_last_not_of("\t\n\r ");
 	return (line.substr(start, end - start + 1));
 }
-
-// ONCE ROOT IS KNOWN AND COMPLETE PATH AVAILABLE FOR TESTING, TRY TO OPEN THE LOCATION
 
 std::string	validateAndParseLocationPath(std::istringstream &iss, std::string &line)
 {
@@ -247,7 +238,6 @@ void	validateAndParseUpload(std::istringstream &iss, LocationConfig &location)
 		throw std::runtime_error("config file:\nlocation " + location.path + " upload_store contains excessive info after ;");
 	}
 	location.upload_store = upload;
-// SHOULD THERE BE ADDITIONAL CHECKS? TRY TO OPEN THE PATH (upload_store)?
 }
 
 void	validateAndParseRedirect(std::istringstream &iss, LocationConfig &location)
@@ -319,7 +309,7 @@ LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::vector
 		std::istringstream iss;
 		iss.str(*it);
 		iss >> key;
-		// std::cout << "it: " << *it << ", key: " << key << std::endl;
+
 		if (key == "root")
 		{
 			validateAndParseRoot(iss, location);
@@ -358,7 +348,7 @@ LocationConfig	parseLocationConfig(std::vector<std::string> &config, std::vector
 		}
 		else
 		{
-			throw std::runtime_error("config file:\n\tserver's location block:\n\t\tunrecognised: " + key); // coulud be more detailed message.
+			throw std::runtime_error("config file:\n\tserver's location block:\n\t\tunrecognised: " + key);
 		}
 		it++;
 	}
@@ -472,7 +462,7 @@ void	validateAndParseListen(std::istringstream &iss, ServerConfig &server)
 	std::string ip_port;
 	iss >> ip_port;
 
-	std::regex valid_ip(R"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\:\d{1,5}\;)"); // 1-3digits.1-3digits.1-3.digits.1-3digits:1-5digits;
+	std::regex valid_ip(R"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\:\d{1,5}\;)");
 	if (!std::regex_match(ip_port, valid_ip))
 	{
 		throw std::runtime_error ("config file: listen IP and port in wrong format.");
@@ -480,7 +470,7 @@ void	validateAndParseListen(std::istringstream &iss, ServerConfig &server)
 	ip_port.pop_back();
 	size_t colon = ip_port.find(":");
 
-	if (colon == std::string::npos) // shouldn't happend since we already validated
+	if (colon == std::string::npos)
 	{
 		throw std::runtime_error("config file: IP address missing colon");
 	}
@@ -495,7 +485,6 @@ ServerConfig parseIndividualServer(std::vector<std::string> &config, std::vector
 	
 	while (it != config.end())
 	{
-	//	//std::cout << "it: " << *it << std::endl;
 		if (*it == "{")
 		{
 			throw std::runtime_error("nested blocks in configuration file");
@@ -559,7 +548,6 @@ std::vector<ServerConfig> parseServers(std::vector<std::string> &config)
 	
 	for (std::vector<std::string>::iterator it = config.begin() ; it != config.end(); ++it)
 	{
-	//	std::cout << "it: " << *it << std::endl;
 		if (it->find("server") != std::string::npos)
 		{
 			validateServerStatement(it);
