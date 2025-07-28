@@ -456,7 +456,8 @@ void Request::handleDelete()
 void Request::handleGet() {
 	if (_path == "/" || (_location.autoindex == false && _is_directory == true)) {
 		if (_location.index != "") {
-			std::string temp = _location.root + "/" + _location.index;
+			std::string temp = _location.root + "/" + _location.path + "/" + _location.index;
+			std::cout << temp << std::endl;
 			if (!std::filesystem::exists(temp)) {
 				handleError(404);
 				return ;
@@ -526,9 +527,14 @@ bool Request::fileExtensionIsSupported(std::string &path) {
 }
 
 void Request::validateRequest() {
-
 	// is any part of the first request line missing
 	if (_method == "" || _path == "" || _version == "") {
+		handleError(400);
+	}
+	// check for upload without file
+	else if (_method == "POST" && _headers.find("content-type") != _headers.end()
+				&& _headers.at("content-type").find("multipart/form-data") != std::string::npos
+				&& _multipart.actual_files == 0) {
 		handleError(400);
 	}
 	// does the path contain the forbidden ".."
