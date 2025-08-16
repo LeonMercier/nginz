@@ -10,11 +10,11 @@ A small HTTP/1.1 server written in C++17
 * Configurable error pages
 * Can show directory listing
 * Configure different directories with:
- * Allowed methods
- * Redirections
- * Directory listing on/off
- * Root folder
- * Default index file
+    * Allowed methods
+    * Redirections
+    * Directory listing on/off
+    * Root folder
+    * Default index file
 
 ## How to run
 Clone the repo and run `make`. 
