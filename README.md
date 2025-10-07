@@ -1,4 +1,4 @@
-# webserv
+# nginz
 A small HTTP/1.1 server written in C++17
 
 This was a group project with [JiggyStardust](https://github.com/JiggyStardust), [Ethan Berkowitz](https://github.com/ethan-berkowitz) and myself. 
